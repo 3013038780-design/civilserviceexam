@@ -13,6 +13,18 @@ from pathlib import Path
 
 def classify(relative):
     text = str(relative)
+    if relative.parts[0] == '已分类资料' and len(relative.parts) > 2:
+        bucket, subject = relative.parts[1:3]
+        if bucket.startswith('02_') and subject == '其他考试':
+            return '其他考试下载资料', '暂缓'
+        if bucket.startswith('01_'):
+            return '个人笔记与整理-' + subject, '结合个人作答按需读取'
+        if bucket.startswith('03_'):
+            return '待确认来源-' + subject, '先核验来源与用途'
+        if bucket.startswith('04_'):
+            return '其他考试或事务', '暂缓'
+        if bucket.startswith('05_'):
+            return '广告或辅助图片', '暂缓'
     if relative.parts[0] == '军队文职' or re.search(r'雅思|考研|复试|MOOD|报名照片|准考证', text, re.I):
         return '其他考试或个人资料', '暂缓'
     if re.search(r'打印|包邮|进群|资源库|每日更新记录', relative.name):
@@ -43,6 +55,8 @@ def scan(source, output):
     rows, failures = [], []
     now = time.time()
     for p in sorted(source.rglob('*')):
+        if p.relative_to(source).as_posix() in ('已分类资料/整理说明.md', '已分类资料/原路径与新路径对照.csv'):
+            continue
         if not p.is_file() or p.name.startswith(('.', '~$')):
             continue
         try:
