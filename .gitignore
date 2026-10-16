@@ -16,3 +16,6 @@ tmp/
 资料/**/*_抽取文本.txt
 本地资料/
 本地作答/
+
+# Read-only upstream Skill snapshots are local reference material.
+.cache/
