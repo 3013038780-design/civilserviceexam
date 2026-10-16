@@ -1,0 +1,4 @@
+interface:
+  display_name: "申论破题与论证"
+  short_description: "从副省级题干与材料建立立意、要点和论证，整理可迁移的表达与案例"
+  default_prompt: "使用 $shenlun-strategy 分析这道副省级申论题，展示材料依据和立意组织，再给可迁移的写法。"

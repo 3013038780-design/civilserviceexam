@@ -1,0 +1,4 @@
+interface:
+  display_name: "行测最简策略"
+  short_description: "按题型学习最简可靠解法、识别信号和适用边界，并进行独立作答对照"
+  default_prompt: "使用 $xingce-strategy 分析这组行测题，先给最简可靠解法，再比较真实存在的其他路径。"

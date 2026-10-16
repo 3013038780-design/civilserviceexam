@@ -1,0 +1,18 @@
+.DS_Store
+**/.DS_Store
+__pycache__/
+*.py[cod]
+.venv/
+tmp/
+.env
+.env.*
+!.env.example
+
+# Third-party source materials remain local; publish provenance and original notes.
+资料/**/*.pdf
+资料/**/*.epub
+资料/**/*.mobi
+资料/**/*.azw*
+资料/**/*_抽取文本.txt
+本地资料/
+本地作答/
