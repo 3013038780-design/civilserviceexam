@@ -55,7 +55,7 @@ def scan(source, output):
     rows, failures = [], []
     now = time.time()
     for p in sorted(source.rglob('*')):
-        if p.relative_to(source).as_posix() in ('已分类资料/整理说明.md', '已分类资料/原路径与新路径对照.csv'):
+        if p.relative_to(source).as_posix() in ('国考资料导航.md', '已分类资料/资料检索.html', '已分类资料/整理说明.md', '已分类资料/原路径与新路径对照.csv'):
             continue
         if not p.is_file() or p.name.startswith(('.', '~$')):
             continue
@@ -108,7 +108,7 @@ def scan(source, output):
     changes = Counter(r['change'] for r in rows)
     report = ['# 桌面国考资料接收记录', '', f'扫描时间：{stamp}', f'来源：{source}', '',
               f'共 {len(rows)} 个非隐藏文件，{sum(r["bytes"] for r in rows)/1048576:.1f} MB。',
-              f'完全相同内容的重复组：{len(duplicates)}；多余副本数：{sum(len(v)-1 for v in duplicates.values())}。不删除原件。',
+              f'完全相同内容的重复组：{len(duplicates)}；多余副本数：{sum(len(v)-1 for v in duplicates.values())}。本索引脚本只登记；实际副本清理另见分类操作日志。',
               f'增量：{dict(changes)}。过于近期或扫描期间变化的文件暂不视为稳定。', '',
               '仅完成文件登记与内容指纹检查，不代表正文已读。分类依据是文件名与目录，须由实际阅读核验。',
               '阅读范围另记在“首批阅读记录.md”。同一文件内容变化后旧阅读记录仅适用于旧指纹。', '',
