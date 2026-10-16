@@ -1,0 +1,32 @@
+schema: spec-driven
+
+context: |
+  Language: zh
+  All artifacts must be written in zh.
+  Keep OpenSpec structural headings and SHALL/MUST keywords in English.
+  目标为2027国考副省级，优先最简可靠解法及用户无提示新题表现。
+  数量关系与图形推理暂缓专项；整卷仍保留首答及不确定性。
+  首答与参考核验分离；原始题库和逐题答案仅放本地忽略目录。
+  遵守AGENTS.md最新用户要求；具体变更任务在OpenSpec，整轮训练进度在issue。
+
+# Per-artifact rules (optional)
+# Add custom rules for specific artifacts.
+# Example:
+#   rules:
+#     proposal:
+#       - Keep proposals under 500 words
+#       - Always state what is out of scope
+#     tasks:
+#       - Break tasks into chunks of max 2 hours
+
+# Per-operation guidance (optional)
+# Add advisory guidance for how apply and archive work should be conducted.
+# This is separate from artifact rules above.
+# Example:
+#   operations:
+#     apply:
+#       guidance:
+#         - Keep test summaries concise
+#     archive:
+#       guidance:
+#         - Summarize the archive outcome before finishing
