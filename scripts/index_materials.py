@@ -15,6 +15,8 @@ def classify(relative):
     text = str(relative)
     if relative.parts[0] == '已分类资料' and len(relative.parts) > 2:
         bucket, subject = relative.parts[1:3]
+        if bucket.startswith('02_') and subject in ('官方考试依据', '时政政策原文'):
+            return subject, '按原文与年度使用'
         if bucket.startswith('02_') and subject == '其他考试':
             return '其他考试下载资料', '暂缓'
         if bucket.startswith('01_'):
