@@ -12,3 +12,5 @@
 | 规格一致 | `openspec validate prepare-shenlun-and-method-validation --strict` | 通过 |
 
 完整验收数据留本地`本地资料/本轮准备验收.json`。第三方原文、整套逐题答案、用户包不纳入公开提交。用户作答、速度与独立迁移尚未取得，训练issue保持开放。
+
+公开成果已以ac7c8b2推送，issue #1与PR #2的更新正文及开放状态已回读确认，PR已附加到当前任务。三个OpenSpec变更全部严格校验通过。当前变更的助手准备任务完成，用户训练证据继续由issue跟踪。
