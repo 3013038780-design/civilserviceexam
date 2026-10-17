@@ -86,8 +86,9 @@ def main():
  # Additional original pages belong only to the private bundle, never public-data.js.
  evidence_root=ROOT/'本地资料/真题策略研究/视觉阅读'
  case_specs={
-  'cloze-evidence':[('2023副省级',4)],
-  'ordering-links':[('2023地市级',8)],
+  'conditional-arrows':[('2022副省级',18)],
+  'cloze-evidence':[('2023副省级',4),('2022副省级',5)],
+  'ordering-links':[('2023地市级',8),('2022副省级',6)],
   'given-rules':[('2024副省级',19)],
   'procedure':[('2025副省级',18)],
   'trend-chart':[('2025副省级',23),('2025副省级',24)],
