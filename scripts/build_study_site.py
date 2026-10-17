@@ -8,6 +8,7 @@ import pdfplumber
 ROOT=Path(__file__).resolve().parents[1]
 WEB=ROOT/'web';OUT=ROOT/'本地作答/学习网站'
 DOCS=[
+('general-methods','行测分类通用方法.md','十一类通用解题方法','行测方法','九类首选流程、细分分流、白话示例与适用边界；数量图推暂缓。'),
 ('reading-map','行测十一类读题地图.md','十一类读题地图','学习起点','不同题型先看哪里、执行什么、何时停止。'),
 ('xingce-cards','行测首轮方法卡.md','四张最简方法卡','行测方法','对象与机制、题内定义、口径还原和精度停止。'),
 ('cross-validation','行测方法跨卷验证摘要.md','方法在哪里经过检验','行测方法','助手样例与用户掌握分开，包含失效边界。'),
@@ -33,11 +34,11 @@ def image_url(im):
 def json_script(o):return json.dumps(o,ensure_ascii=False,separators=(',',':')).replace('<','\\u003c').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--public-only',action='store_true');args=parser.parse_args()
- public={'docs':[dict(id=id,path=path,title=title,group=group,description=desc,content=(ROOT/path).read_text()) for id,path,title,group,desc in DOCS],'assets':{}}
+ public={'docs':[dict(id=id,path=path,title=title,group=group,description=desc,content=(ROOT/path).read_text()) for id,path,title,group,desc in DOCS],'assets':{},'methods':json.loads((WEB/'content/xingce-methods.json').read_text())}
  for p in [ROOT/'图示/行测十一类六维任务图.png',ROOT/'行策20题试做结果.jpg']:
   public['assets'][str(p.relative_to(ROOT))]='assets/'+p.name;(WEB/'assets').mkdir(exist_ok=True);shutil.copy2(p,WEB/'assets'/p.name)
  (WEB/'public-data.js').write_text('window.STUDY_PUBLIC='+json_script(public)+';\n')
- if args.public_only:print('Public reader: 18 documents, no private answers or original papers.');return
+ if args.public_only:print(f"Public reader: {len(DOCS)} documents, 11 method entries, no private original papers.");return
  source=Path('/Users/olivialee/Desktop/国考/已分类资料/02_下载资料/行测/真题/2026/副省级/题面候选/2026年国家公务员录用考试《行测》题（副省级）.pdf')
  cache=ROOT/'tmp/学习网页';cache.mkdir(parents=True,exist_ok=True)
  if len(list(cache.glob('原卷-*.jpg')))!=26:
