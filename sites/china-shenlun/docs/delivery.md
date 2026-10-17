@@ -15,3 +15,5 @@ GitHub评审提交由关联PR及Git历史提供；Sites专用源仓库的SHA与G
 验证：Python内容契约、JS语法、OpenSpec严格校验通过；真实浏览器检查桌面导航、待建单元、隐藏示范、草稿刷新恢复、冻结首稿保护、JSON导出、来源搜索、示范接触记录、存储异常提示，以及390px手机页面无水平溢出。桌面和手机截图已本地检查，浏览器未报告页面异常。
 
 验证只覆盖本轮网站功能。完整八单元内容、长期来源效力与用户独立迁移仍按Issue #8/#9继续。本轮未复制第三方课程或私人题库，没有设定后台定时更新。
+
+GitHub评审：[PR #10](https://github.com/3013038780-design/civilserviceexam/pull/10)，分支`codex/china-shenlun-course`，首批提交`95069ca`；以`codex/corpus-strategies`为基线承接既有PR #5。已推送，尚未合并。网站Issue #7等待评审；课程总Issue #6与后续#8/#9保持开放。
