@@ -1,0 +1,130 @@
+{
+  "checkedAt": "2026-10-17",
+  "basis": "学习纲要2023年版",
+  "chapters": [
+    {
+      "chapter": 1,
+      "url": "https://www.12371.cn/2023/10/11/ARTI1697012249013245.shtml",
+      "pdf_start_page": 53,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 2,
+      "url": "https://www.12371.cn/2023/10/18/ARTI1697586851111324.shtml",
+      "pdf_start_page": 78,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 3,
+      "url": "https://www.12371.cn/2023/10/27/ARTI1698364768177724.shtml",
+      "pdf_start_page": 120,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 4,
+      "url": "https://www.12371.cn/2023/11/06/ARTI1699227795116898.shtml",
+      "pdf_start_page": 153,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 5,
+      "url": "https://www.12371.cn/2023/11/10/ARTI1699571299753403.shtml",
+      "pdf_start_page": 170,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 6,
+      "url": "https://www.12371.cn/2023/11/14/ARTI1699943644551206.shtml",
+      "pdf_start_page": 183,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 7,
+      "url": "https://www.12371.cn/2023/11/23/ARTI1700697238073340.shtml",
+      "pdf_start_page": 218,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 8,
+      "url": "https://www.12371.cn/2023/12/01/ARTI1701386191983992.shtml",
+      "pdf_start_page": 247,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 9,
+      "url": "https://www.12371.cn/2023/12/14/ARTI1702512191950614.shtml",
+      "pdf_start_page": 295,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 10,
+      "url": "https://www.12371.cn/2023/12/27/ARTI1703632744507340.shtml",
+      "pdf_start_page": 346,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 11,
+      "url": "https://www.12371.cn/2024/01/08/ARTI1704671629710927.shtml",
+      "pdf_start_page": 385,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 12,
+      "url": "https://www.12371.cn/2024/01/19/ARTI1705621183129105.shtml",
+      "pdf_start_page": 434,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 13,
+      "url": "https://www.12371.cn/2024/01/26/ARTI1706225708716293.shtml",
+      "pdf_start_page": 457,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 14,
+      "url": "https://www.12371.cn/2024/02/04/ARTI1707002518205934.shtml",
+      "pdf_start_page": 479,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 15,
+      "url": "https://www.12371.cn/2024/02/19/ARTI1708330210077310.shtml",
+      "pdf_start_page": 498,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 16,
+      "url": "https://www.12371.cn/2024/03/08/ARTI1709866867244459.shtml",
+      "pdf_start_page": 524,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 17,
+      "url": "https://www.12371.cn/2024/03/11/ARTI1710131089787114.shtml",
+      "pdf_start_page": 543,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 18,
+      "url": "https://www.12371.cn/2024/03/13/ARTI1710314736074839.shtml",
+      "pdf_start_page": 576,
+      "readScope": "章首相关段落，非全章逐节精读"
+    },
+    {
+      "chapter": 19,
+      "url": "https://www.12371.cn/2024/03/15/ARTI1710467856447793.shtml",
+      "pdf_start_page": 589,
+      "readScope": "章首相关段落，非全章逐节精读"
+    }
+  ],
+  "supplementaryReading": [
+    "纸书33—39页相关国情与布局段落",
+    "纸书57—59页现代化特征段落",
+    "纸书79—81页两步走安排",
+    "纸书149—152页市场政府关系相关段落",
+    "纸书296—304页六个必须坚持相关选段"
+  ],
+  "bookLocalSha256": "3204be59a39d2420bc6da438320da14fdbb1f46d23d71937f3f1ca71730dbe2c",
+  "privateSourceText": "仅本地忽略缓存",
+  "note": "页数定位不能当全书读完；当前讲义为基础课程初稿，后续深入与用户迁移另记"
+}
