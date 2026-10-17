@@ -34,7 +34,7 @@ def main():
   source=Path(row['path']);stamp=dict(size=source.stat().st_size,mtime_ns=source.stat().st_mtime_ns)
   meta=dest/'抽取状态.json'
   previous=json.loads(meta.read_text()) if meta.exists() else {}
-  if previous.get('source_stat')==stamp and previous.get('parser_revision')==2:continue
+  if previous.get('source_stat')==stamp and previous.get('parser_revision')==3:continue
   if previous.get('source_stat')==stamp and (dest/'pages.json').exists():
    pages=json.loads((dest/'pages.json').read_text())
   else:
@@ -45,10 +45,10 @@ def main():
   # Layout may place question number on its own line; retain text in full for manual reading.
   anchors=[]
   for i,t in enumerate(pages):
-   for m in re.finditer(r'(?m)(?<![\d.])(\d{1,3})[.．](?!\d)',t):
-    n=int(m[1])
+   for m in re.finditer(r'(?m)^\s*(\d{1,3})[.．]|(?<![\d.])(\d{1,3})[.．](?!\d)',t):
+    n=int(m[1] or m[2])
     if 1<=n<=150:anchors.append(dict(n=n,page=i+1,offset=m.start()))
-  status={**row,'source_stat':stamp,'sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'pages':len(pages),'text_characters':sum(map(len,pages)),'anchors':anchors,'parser_revision':2,'anchor_note':'仅为题号候选；实际题号、页码与语义分类需阅读确认','stage':'全文已抽取，尚未据此标记已读','image_note':'图形、表格与公式须另做视觉核对；文字抽取不能证明已读图表'}
+  status={**row,'source_stat':stamp,'sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'pages':len(pages),'text_characters':sum(map(len,pages)),'anchors':anchors,'parser_revision':3,'anchor_note':'仅为题号候选；实际题号、页码与语义分类需阅读确认','stage':'全文已抽取，尚未据此标记已读','image_note':'图形、表格与公式须另做视觉核对；文字抽取不能证明已读图表'}
   meta.write_text(json.dumps(status,ensure_ascii=False,indent=2));print(row['id'],len(pages),len(text),flush=True)
  print('Prepared main-paper reading copies; no comprehension status automatically advanced.',flush=True)
 if __name__=='__main__':main()

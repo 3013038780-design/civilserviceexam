@@ -8,6 +8,8 @@ import pdfplumber
 ROOT=Path(__file__).resolve().parents[1]
 WEB=ROOT/'web';OUT=ROOT/'本地作答/学习网站'
 DOCS=[
+('strategy-research','真题阅读与分类策略研究.md','全量阅读与分类修订进度','研究与记录','实际已读、待读、题型差异和证据限制分别记录。'),
+('task-branches','.agents/skills/xingce-strategy/references/task-branches.md','规则执行与图表分支','行测方法','自定规则、算法、趋势图及共享约束等候选规则。'),
 ('general-methods','行测分类通用方法.md','十一类通用解题方法','行测方法','九类首选流程、细分分流、白话示例与适用边界；数量图推暂缓。'),
 ('reading-map','行测十一类读题地图.md','十一类读题地图','学习起点','不同题型先看哪里、执行什么、何时停止。'),
 ('xingce-cards','行测首轮方法卡.md','四张最简方法卡','行测方法','对象与机制、题内定义、口径还原和精度停止。'),
@@ -34,7 +36,7 @@ def image_url(im):
 def json_script(o):return json.dumps(o,ensure_ascii=False,separators=(',',':')).replace('<','\\u003c').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--public-only',action='store_true');args=parser.parse_args()
- public={'docs':[dict(id=id,path=path,title=title,group=group,description=desc,content=(ROOT/path).read_text()) for id,path,title,group,desc in DOCS],'assets':{},'methods':json.loads((WEB/'content/xingce-methods.json').read_text())}
+ public={'docs':[dict(id=id,path=path,title=title,group=group,description=desc,content=(ROOT/path).read_text()) for id,path,title,group,desc in DOCS],'assets':{},'methods':json.loads((WEB/'content/xingce-methods.json').read_text()),'strategyCards':json.loads((WEB/'content/xingce-branches.json').read_text())}
  for p in [ROOT/'图示/行测十一类六维任务图.png',ROOT/'行策20题试做结果.jpg']:
   public['assets'][str(p.relative_to(ROOT))]='assets/'+p.name;(WEB/'assets').mkdir(exist_ok=True);shutil.copy2(p,WEB/'assets'/p.name)
  (WEB/'public-data.js').write_text('window.STUDY_PUBLIC='+json_script(public)+';\n')
@@ -81,6 +83,26 @@ def main():
   sections={};parts=re.split(r'(?m)^## 第([1-5])题[^\n]*\n',mapping)
   for i in range(1,len(parts),2):sections[int(parts[i])]=parts[i+1].strip()
   b={'schema':'gongkao-study/v1','title':'2026副省级逐题研习','xingce':rows,'shenlun':json.loads((ROOT/'本地作答/2026副省级申论/首答/五题首答.json').read_text()),'shenlunSections':sections,'shenlunReview':(ROOT/'本地作答/2026副省级申论/核验与教学/五题核验报告.md').read_text(),'shenlunRevisions':(ROOT/'本地作答/2026副省级申论/核验与教学/核验后改进稿.md').read_text(),'paper':{'pages':[image_url(im) for im in imgs],'map':{n:{'page':m['page'],'y':round(m['y'],5)} for n,m in idx.items()}}}
+ # Additional original pages belong only to the private bundle, never public-data.js.
+ evidence_root=ROOT/'本地资料/真题策略研究/视觉阅读'
+ case_specs={
+  'given-rules':[('2024副省级',19)],
+  'procedure':[('2025副省级',18)],
+  'trend-chart':[('2025副省级',23),('2025副省级',24)],
+  'shared-constraints':[('2026地市级',19),('2026地市级',20)],
+  'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
+  'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
+  'scope':[('2026行政执法',19),('2026行政执法',20)]}
+ evidence_pages={};evidence_cases={}
+ for case,sources in case_specs.items():
+  ids=[]
+  for edition,page in sources:
+   key=f'{edition}-PDF{page:02}';ids.append(key)
+   if key not in evidence_pages:
+    im=Image.open(evidence_root/edition/f'PDF{page:02}.png');im.thumbnail((1100,1700))
+    evidence_pages[key]={'label':f'{edition} · PDF第{page}页','image':image_url(im)}
+  evidence_cases[case]=ids
+ b['strategyEvidence']={'pages':evidence_pages,'cases':evidence_cases}
  OUT.mkdir(parents=True,exist_ok=True)
  (OUT/'公考学习资料包.json').write_text(json_script(b))
  html=(WEB/'index.html').read_text().replace('<link rel="stylesheet" href="app.css">','<style>'+(WEB/'app.css').read_text()+'</style>')
