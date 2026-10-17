@@ -1,0 +1,93 @@
+[
+  {
+    "unit": 1,
+    "title": "道路理论与历史方位",
+    "file": "01-道路理论与历史方位.md",
+    "chapters": [
+      2
+    ],
+    "characters": 2352,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 2,
+    "title": "党的领导与党的建设",
+    "file": "02-党的领导与党的建设.md",
+    "chapters": [
+      1,
+      8
+    ],
+    "characters": 2320,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 3,
+    "title": "国家制度与治理结构",
+    "file": "03-国家制度与治理结构.md",
+    "chapters": [
+      7,
+      10
+    ],
+    "characters": 2114,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 4,
+    "title": "人民立场与现实国情",
+    "file": "04-人民立场与现实国情.md",
+    "chapters": [
+      4,
+      12
+    ],
+    "characters": 1767,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 5,
+    "title": "中国式现代化与战略安排",
+    "file": "05-中国式现代化与战略安排.md",
+    "chapters": [
+      3,
+      5
+    ],
+    "characters": 2364,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 6,
+    "title": "国家建设各领域",
+    "file": "06-国家建设各领域.md",
+    "chapters": [
+      9,
+      11,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "characters": 2635,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 7,
+    "title": "改革与思想工作方法",
+    "file": "07-改革与思想工作方法.md",
+    "chapters": [
+      6,
+      19
+    ],
+    "characters": 1982,
+    "status": "完整讲义初稿 待用户迁移"
+  },
+  {
+    "unit": 8,
+    "title": "实践落实监督与反馈",
+    "file": "08-实践落实监督与反馈.md",
+    "chapters": [
+      18
+    ],
+    "characters": 1922,
+    "status": "完整讲义初稿 待用户迁移"
+  }
+]
