@@ -96,7 +96,8 @@ def main():
   'procedure':[('2025副省级',18)],
   'trend-chart':[('2025副省级',23),('2025副省级',24),('2022行政执法',19),('2022行政执法',20),('2020副省级',14),('2020副省级',15),('2016副省级',15),('2016副省级',16)],
   'shared-constraints':[('2026地市级',19),('2026地市级',20),('2022行政执法',17),('2021地市级',14),('2020地市级',12),('2020地市级',13),('2019地市级',12),('2018地市级',11),('2017地市级',12)],
-  'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24),('2017副省级',14),('2017副省级',15),('2016副省级',14),('2016副省级',15)],
+  'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24),('2017副省级',14),('2017副省级',15),('2016副省级',14),('2016副省级',15),('2014主卷',14),('2014主卷',15),('2013主卷',14),('2012主卷',13),('2012主卷',14),('2011主卷',15),('2010主卷',14),('2007主卷',12)],
+  'average-change':[('2009主卷',13),('2009主卷',14),('2010主卷',14)],
   'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24),('2019副省级',16),('2015副省级',14)],
   'scope':[('2026行政执法',19),('2026行政执法',20),('2022行政执法',16),('2018副省级',13),('2017副省级',12),('2016副省级',13),('2015副省级',12)],
   'question-mechanism':[('2025地市级',9),('2025地市级',10),('2025地市级',11)],
@@ -127,10 +128,24 @@ def main():
  # Keep hosted files below the static host's per-file limit as evidence grows.
  # The portable single-file edition above retains the complete bundle.
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
- (local/'strategy-evidence.js').write_text('window.STUDY_STRATEGY_EVIDENCE='+json_script(b['strategyEvidence'])+';\n')
- preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/json">'+json_script(hosted_bundle)+'</script><script src="strategy-evidence.js"></script>')
+ # Split by complete page records; never split image data or omit a referenced page.
+ # Scripts execute in order before app.js, preserving the existing reader contract.
+ for stale in local.glob('strategy-evidence*.js'):stale.unlink()
+ chunks=[];chunk={};size=0;chunk_limit=8*1024*1024
+ for key,value in evidence_pages.items():
+  item_size=len(json_script({key:value}).encode('utf-8'))
+  if chunk and size+item_size>chunk_limit:chunks.append(chunk);chunk={};size=0
+  chunk[key]=value;size+=item_size
+ if chunk:chunks.append(chunk)
+ evidence_assets=[]
+ for i,pages in enumerate(chunks):
+  name=f'strategy-evidence-{i}.js';evidence_assets.append(name)
+  init='window.STUDY_STRATEGY_EVIDENCE='+json_script({'pages':{},'cases':evidence_cases})+';\n' if i==0 else ''
+  (local/name).write_text(init+'Object.assign(window.STUDY_STRATEGY_EVIDENCE.pages,'+json_script(pages)+');\n')
+ scripts=''.join('<script src="'+name+'"></script>' for name in evidence_assets)
+ preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/json">'+json_script(hosted_bundle)+'</script>'+scripts)
  # Content fingerprints prevent a refreshed page from reusing an older UI or method library.
- for asset in ['app.css','app.js','public-data.js','strategy-evidence.js']:
+ for asset in ['app.css','app.js','public-data.js']+evidence_assets:
   digest=hashlib.sha256((local/asset).read_bytes()).hexdigest()[:12]
   preview=preview.replace('"'+asset+'"','"'+asset+'?v='+digest+'"')
  (local/'index.html').write_text(preview)
