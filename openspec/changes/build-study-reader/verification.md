@@ -24,3 +24,7 @@ Sites私有部署已成功，线上URL为 https://gongkao-study-studio.easy-tern
 内置浏览器安全策略禁止file协议，没有绕过。本机自包含HTML已做结构检查，需用户用系统浏览器打开，未声称在内置浏览器验证了file打开。
 
 本次验证证明内容接入和阅读功能，不证明独立学习效果，也不替用户填写任何测试成绩。
+
+## 项目交付
+
+网站issue #3与增量PR #4已创建，PR基于codex/training-workflow，已附加到当前任务；此前训练issue #1保持开放。本机使用说明与README入口已更新，私人产物未纳入Git暂存。
