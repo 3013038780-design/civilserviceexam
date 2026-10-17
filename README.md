@@ -82,4 +82,4 @@ AI首答已保存，见[首答完成记录](资料/2026副省级/AI首答完成�
 
 ## 了解中国与申论系统课程
 
-独立课程见[项目README](sites/china-shenlun/README.md)、[需求](sites/china-shenlun/docs/requirements.md)、[每日方案](了解中国与申论每日学习方案.md)和[总Issue #6](https://github.com/3013038780-design/civilserviceexam/issues/6)。[新私人站](https://china-to-shenlun.easy-tern-3117.chatgpt.site)与原研习站分开；首版为网站基础和首课示范，不代表八单元内容完成或用户已掌握。
+独立课程见[项目README](sites/china-shenlun/README.md)、[需求](sites/china-shenlun/docs/requirements.md)、[每日方案](了解中国与申论每日学习方案.md)和[总Issue #6](https://github.com/3013038780-design/civilserviceexam/issues/6)。[新私人站](https://china-to-shenlun.easy-tern-3117.chatgpt.site)与原研习站分开；现已备齐[八课Markdown讲义](sites/china-shenlun/manuscripts/了解中国与申论八课讲义.md)、九份Word和下载包，网页同步同一正文；十九章有原文对照和实际选读记录。内容仍为讲义初稿，用户独立迁移待验证。

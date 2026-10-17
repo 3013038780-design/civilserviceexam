@@ -1,0 +1,13 @@
+{
+  "checkedAt": "2026-10-17",
+  "manuscriptLessons": 8,
+  "chapterMappings": 19,
+  "wordDocuments": 9,
+  "combinedWordPages": 21,
+  "singleWordPages": [3,2,2,2,2,3,2,2],
+  "renderedAndVisuallyInspected": "所有9份Word全部39页；修复中文字体缺失与空白分页；两课末页较短，正文无截断",
+  "websiteTextEquality": "逐课网页数据与对应Markdown原稿完全一致；写作示范在网页默认折叠",
+  "browserChecks": ["八课完整正文", "八课MD和Word下载", "ZIP下载", "旧课节ID兼容", "多课草稿隔离", "刷新恢复", "冻结首稿不覆盖", "导出", "示范接触记录", "来源搜索", "390px八课无水平溢出", "存储异常提示"],
+  "pageErrors": [],
+  "limits": ["十九章主题有定位，不是逐节精读全书", "政策部署与实际成效分开", "网页功能通过不等于用户独立迁移通过", "核验日期不代表永久最新"]
+}
