@@ -79,3 +79,7 @@ AI首答已保存，见[首答完成记录](资料/2026副省级/AI首答完成�
 最新用户指示优先，其次为`AGENTS.md`与目标协议。研究文档中的早期建议作为探索记录保留，不覆盖已明确的学习取舍。
 
 分类学习主线见[十一类通用解题方法](行测分类通用方法.md)：九类第一版流程，数量图推暂缓。方法迭代、反例与跨题验证由训练issue #1持续跟踪，不以页面完成代替教学有效。
+
+## 了解中国与申论系统课程
+
+独立课程见[项目README](sites/china-shenlun/README.md)、[需求](sites/china-shenlun/docs/requirements.md)、[每日方案](了解中国与申论每日学习方案.md)和[总Issue #6](https://github.com/3013038780-design/civilserviceexam/issues/6)。[新私人站](https://china-to-shenlun.easy-tern-3117.chatgpt.site)与原研习站分开；首版为网站基础和首课示范，不代表八单元内容完成或用户已掌握。

@@ -1,0 +1,33 @@
+{
+  "checkedAt": "2026-10-17",
+  "browser": {
+    "desktop": true,
+    "mobile_no_overflow": true,
+    "routes": true,
+    "first_draft_preserved": true,
+    "reload_restore": true,
+    "export": true,
+    "source_search": true,
+    "example_exposure_recorded": true,
+    "storage_failure_notice": true,
+    "console_errors": []
+  },
+  "content": {
+    "units": 8,
+    "exampleLessons": 1,
+    "pendingUnits": 7,
+    "sources": 3
+  },
+  "runtimeMatchesSitesSource": true,
+  "runtimeSha256": {
+    "index.html": "3b88c920297dae63fca7b9c3394ac83a29289b2a2328fc613ec15d9e9a08a4b0",
+    "style.css": "bd3a8e64bc3cf29bbeeec4f2ce8fce740fbe2a7589e61768888bf3cda619a0b2",
+    "content.js": "742f66f576830da63be6b332bfe3cc05539f1934c6eb0982a8d9911fd84947bd",
+    "app.js": "f761b0194b3fc8aee370a4123b7d31fa0a9b93fbb052c11e070397a1e4ec0467"
+  },
+  "limitations": [
+    "未以用户真实作答验证学习效果",
+    "完整八单元内容尚未完成",
+    "来源时效需随使用继续复核"
+  ]
+}
