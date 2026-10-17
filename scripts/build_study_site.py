@@ -89,13 +89,13 @@ def main():
   'sentence-role':[('2021副省级',5),('2020副省级',5),('2020地市级',6)],
   'conditional-arrows':[('2022副省级',18)],
   'cloze-evidence':[('2023副省级',4),('2022副省级',5)],
-  'ordering-links':[('2023地市级',8),('2022副省级',6)],
-  'given-rules':[('2024副省级',19)],
+  'ordering-links':[('2023地市级',8),('2022副省级',6),('2019地市级',6)],
+  'given-rules':[('2024副省级',19),('2019副省级',11)],
   'procedure':[('2025副省级',18)],
   'trend-chart':[('2025副省级',23),('2025副省级',24),('2022行政执法',19),('2022行政执法',20),('2020副省级',14),('2020副省级',15)],
-  'shared-constraints':[('2026地市级',19),('2026地市级',20),('2022行政执法',17),('2021地市级',14),('2020地市级',12),('2020地市级',13)],
+  'shared-constraints':[('2026地市级',19),('2026地市级',20),('2022行政执法',17),('2021地市级',14),('2020地市级',12),('2020地市级',13),('2019地市级',12)],
   'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
-  'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
+  'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24),('2019副省级',16)],
   'scope':[('2026行政执法',19),('2026行政执法',20),('2022行政执法',16)],
   'question-mechanism':[('2025地市级',9),('2025地市级',10),('2025地市级',11)],
   'three-word-relations':[('2024地市级',18)],
@@ -127,6 +127,10 @@ def main():
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
  (local/'strategy-evidence.js').write_text('window.STUDY_STRATEGY_EVIDENCE='+json_script(b['strategyEvidence'])+';\n')
  preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/json">'+json_script(hosted_bundle)+'</script><script src="strategy-evidence.js"></script>')
+ # Content fingerprints prevent a refreshed page from reusing an older UI or method library.
+ for asset in ['app.css','app.js','public-data.js','strategy-evidence.js']:
+  digest=hashlib.sha256((local/asset).read_bytes()).hexdigest()[:12]
+  preview=preview.replace('"'+asset+'"','"'+asset+'?v='+digest+'"')
  (local/'index.html').write_text(preview)
  assert all(p.stat().st_size<25*1024*1024 for p in local.rglob('*') if p.is_file()),'Hosted asset exceeds 25 MiB'
  summary={'xingce':len(rows),'shenlun':len(b['shenlun']),'paper_pages':26,'mapped_questions':len(idx),'public_documents':len(public['docs']),'bundle_bytes':(OUT/'公考学习资料包.json').stat().st_size,'html_bytes':(OUT/'公考解题研习室.html').stat().st_size,'source_pdf_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'context_groups':[{'questions':[a,z],'page':p} for a,z,p,_ in groups]}
