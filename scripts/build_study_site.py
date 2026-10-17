@@ -86,19 +86,20 @@ def main():
  # Additional original pages belong only to the private bundle, never public-data.js.
  evidence_root=ROOT/'本地资料/真题策略研究/视觉阅读'
  case_specs={
+  'sentence-role':[('2021副省级',5)],
   'conditional-arrows':[('2022副省级',18)],
   'cloze-evidence':[('2023副省级',4),('2022副省级',5)],
   'ordering-links':[('2023地市级',8),('2022副省级',6)],
   'given-rules':[('2024副省级',19)],
   'procedure':[('2025副省级',18)],
   'trend-chart':[('2025副省级',23),('2025副省级',24),('2022行政执法',19),('2022行政执法',20)],
-  'shared-constraints':[('2026地市级',19),('2026地市级',20),('2022行政执法',17)],
+  'shared-constraints':[('2026地市级',19),('2026地市级',20),('2022行政执法',17),('2021地市级',14)],
   'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
   'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
   'scope':[('2026行政执法',19),('2026行政执法',20),('2022行政执法',16)],
   'question-mechanism':[('2025地市级',9),('2025地市级',10),('2025地市级',11)],
   'three-word-relations':[('2024地市级',18)],
-  'added-batch':[('2024行政执法',22),('2024行政执法',23),('2024行政执法',24)]}
+  'added-batch':[('2024行政执法',22),('2024行政执法',23),('2024行政执法',24),('2021地市级',18)]}
  evidence_pages={};evidence_cases={}
  for case,sources in case_specs.items():
   ids=[]
