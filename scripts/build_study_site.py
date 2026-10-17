@@ -93,7 +93,9 @@ def main():
   'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
   'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
   'scope':[('2026行政执法',19),('2026行政执法',20)],
-  'question-mechanism':[('2025地市级',9),('2025地市级',10),('2025地市级',11)]}
+  'question-mechanism':[('2025地市级',9),('2025地市级',10),('2025地市级',11)],
+  'three-word-relations':[('2024地市级',18)],
+  'added-batch':[('2024行政执法',22),('2024行政执法',23),('2024行政执法',24)]}
  evidence_pages={};evidence_cases={}
  for case,sources in case_specs.items():
   ids=[]
