@@ -81,3 +81,5 @@
 | T | [HuaXiLF/shenlun-trainer](https://github.com/HuaXiLF/shenlun-trainer) | `567d0156ff6e350e8b432c82be71bbb503c0966b` |
 | K | [KeWang0622/kaogong-skill](https://github.com/KeWang0622/kaogong-skill) | `2af2115291bdd0f9973554e04102636f82984827` |
 | Q | [XiaoSiKe/qingan-initiative-civil-service-examination-sprint-coach](https://github.com/XiaoSiKe/qingan-initiative-civil-service-examination-sprint-coach) | `eaf90d7f0d97a17d5ad4d794d9ae09f6c97cfede` |
+
+- 主旨阅读跨年第一批：已读固定版本0405与0738，借用范围和链接见真题阅读与分类策略研究.md本批章节；不照收对策优先与强制结构命名。

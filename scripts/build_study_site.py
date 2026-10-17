@@ -86,6 +86,7 @@ def main():
  # Additional original pages belong only to the private bundle, never public-data.js.
  evidence_root=ROOT/'本地资料/真题策略研究/视觉阅读'
  case_specs={
+  'main-claim':[('2005卷一',1),('2005卷一',2),('2005卷一',3),('2006卷一',1),('2006卷一',3),('2006卷一',5)],
   'visual-description':[('2015副省级',11)],
   'sentence-role':[('2021副省级',5),('2020副省级',5),('2020地市级',6),('2018副省级',5),('2017副省级',5),('2017副省级',7),('2016副省级',5)],
   'truth-count':[('2017副省级',13)],
