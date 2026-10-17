@@ -92,7 +92,8 @@ def main():
   'shared-constraints':[('2026地市级',19),('2026地市级',20)],
   'denominator':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
   'identifiability':[('2026行政执法',22),('2026行政执法',23),('2026行政执法',24)],
-  'scope':[('2026行政执法',19),('2026行政执法',20)]}
+  'scope':[('2026行政执法',19),('2026行政执法',20)],
+  'question-mechanism':[('2025地市级',9),('2025地市级',10),('2025地市级',11)]}
  evidence_pages={};evidence_cases={}
  for case,sources in case_specs.items():
   ids=[]
@@ -115,8 +116,13 @@ def main():
  (OUT/'公考解题研习室.html').write_text(html)
  # An HTTP preview with the same preloaded data, no need to import during QA.
  local=OUT/'preview';shutil.copytree(WEB,local,dirs_exist_ok=True)
- preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/json">'+json_script(b)+'</script>')
+ # Keep hosted files below the static host's per-file limit as evidence grows.
+ # The portable single-file edition above retains the complete bundle.
+ hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
+ (local/'strategy-evidence.js').write_text('window.STUDY_STRATEGY_EVIDENCE='+json_script(b['strategyEvidence'])+';\n')
+ preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/json">'+json_script(hosted_bundle)+'</script><script src="strategy-evidence.js"></script>')
  (local/'index.html').write_text(preview)
+ assert all(p.stat().st_size<25*1024*1024 for p in local.rglob('*') if p.is_file()),'Hosted asset exceeds 25 MiB'
  summary={'xingce':len(rows),'shenlun':len(b['shenlun']),'paper_pages':26,'mapped_questions':len(idx),'public_documents':len(public['docs']),'bundle_bytes':(OUT/'公考学习资料包.json').stat().st_size,'html_bytes':(OUT/'公考解题研习室.html').stat().st_size,'source_pdf_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'context_groups':[{'questions':[a,z],'page':p} for a,z,p,_ in groups]}
  (OUT/'构建记录.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2));print(json.dumps(summary,ensure_ascii=False))
 if __name__=='__main__':main()
