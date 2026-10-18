@@ -11,13 +11,13 @@ for name in ['策略实施_首答保护哈希.json','策略实施_新增首答�
    assert hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest,path
 cat=read(R/'主版本阅读目录.json');inventory=read(R/'逐题策略检验清单.json')['items'];summary=read(R/'策略检验盘点汇总.json');reviews=read(R/'定义80题_策略执行审阅.json')['cases'];cards=read(ROOT/'web/content/xingce-branches.json');by={c['id']:c for c in cards}
 assert len(cat)==len(summary['units'])==50
-assert len(by)==len(cards)==26
+assert len(by)==len(cards)==27
 assert len(inventory)==len({x['source_id'] for x in inventory})
 assert len(reviews)==len({x['source_id'] for x in reviews})==80
 reviewed={x['source_id'] for x in reviews}
 latest_reviews={x['source_id']:x for x in reviews}
-for p in R.glob('定义策略检验_*.json'):reviewed.update(x['source_id'] for x in read(p)['cases'])
-for p in sorted(R.glob('定义策略检验_*.json'),key=lambda path:read(path).get('saved_at','')):
+for p in R.glob('*策略检验_*.json'):reviewed.update(x['source_id'] for x in read(p)['cases'])
+for p in sorted(R.glob('*策略检验_*.json'),key=lambda path:read(path).get('saved_at','')):
  for case in read(p)['cases']:latest_reviews[case['source_id']]=case
 for x in inventory:
  if x['status'] in ['已有策略检验','存在争议']:
@@ -62,11 +62,11 @@ if not next_batch['items'] and not expected_discovery:
  assert next_batch['stage']=='来源分流已登记，待教学与遗留回查'
 if next_batch.get('category')=='资料分析':
  audit=read(R/'定义覆盖验收.json')
- assert audit['source_units']==50 and audit['reviewed_positions']==len(reviewed)
+ assert audit['source_units']==50 and audit['reviewed_positions']==sum(audit_by[sid]['category']=='定义判断' for sid in reviewed)
  assert not read(R/'策略回查清单.json')['pending']
  assert all(audit_by[x['source_id']]['category']=='资料分析' for x in next_batch['items'])
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3
  assert all(set(q)=={'source_id','label','pages','image'} and q['image'].startswith('data:image/jpeg;base64,') for q in group['questions'])
-print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_definition_positions':len(reviewed),'old80_assessment':dict(collections.Counter(x['assessment'] for x in reviews)),'review_states':dict(collections.Counter(x['status'] for x in inventory if x['method'])),'visual_branches':sum('teaching' in c for c in cards),'auto_read_or_validation_promotion':False},ensure_ascii=False))
+print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_definition_positions':sum(audit_by[sid]['category']=='定义判断' for sid in reviewed),'reviewed_by_category':dict(collections.Counter(audit_by[sid]['category'] for sid in reviewed)),'old80_assessment':dict(collections.Counter(x['assessment'] for x in reviews)),'review_states':dict(collections.Counter(x['status'] for x in inventory if x['method'])),'visual_branches':sum('teaching' in c for c in cards),'auto_read_or_validation_promotion':False},ensure_ascii=False))

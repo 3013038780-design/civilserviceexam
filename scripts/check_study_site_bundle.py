@@ -20,7 +20,7 @@ for f in sorted(p.glob('strategy-evidence-*.js'),key=lambda f:int(f.stem.split('
  if t.startswith('window.STUDY_STRATEGY_EVIDENCE='): cases=json.loads(t.split('=',1)[1].split(';\n',1)[0])['cases']
  q=json.loads(t.split('Object.assign(window.STUDY_STRATEGY_EVIDENCE.pages,',1)[1].rsplit(');',1)[0]);assert not pages.keys()&q.keys();pages.update(q)
 assert pages==b['strategyEvidence']['pages'] and cases==b['strategyEvidence']['cases'];assert all(k in pages for v in cases.values() for k in v)
-branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert len(branches)==len({x['id'] for x in branches})==26
+branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert len(branches)==len({x['id'] for x in branches})==27
 assert all(f.stat().st_size<25*1024*1024 for f in p.rglob('*') if f.is_file())
 dest=Path('本地资料/网站发布/dist')
 for f in dest.glob('strategy-evidence-*.js'):
