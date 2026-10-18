@@ -120,21 +120,36 @@ if definition_finished:
  assert audit['source_units']==len(cat) and audit['reviewed_positions']==sum(x['category']=='定义判断' for x in items)
  assert not read(R/'策略回查清单.json')['pending']
  assert not any(x['category']=='定义判断' and x['status'] in ['已读待策略检验','需要回查'] for x in items)
+# Follow the explicitly selected next category only after both prior category
+# coverage and the completed teaching unit have evidence. Empty queues alone
+# never advance the research sequence.
+requested=read(R/'续接检查点.json').get('next_batch',{}).get('category')
+if requested=='中心句与排序':
+ assert definition_finished
+ data_coverage=read(R/'资料覆盖验收.json')
+ data_rows=[x for x in items if x['category']=='资料分析']
+ assert data_coverage['source_units']==len(cat)==50
+ assert data_coverage['reviewed_positions']==len(data_rows)
+ assert all(x['status'] in ['已有策略检验','存在争议'] for x in data_rows)
+ teaching=read(R/'资料教学_15分支语义与来源核对.json')
+ assert len(teaching['branches'])==15 and teaching.get('deployment')
+ assert {x['id'] for x in teaching['branches']}=={c['id'] for c in cards if c['category']=='data'}
+ category=requested
 # Already-read positions first, year descending, catalogue order.
 xs=[x for x in items if x['category']==category and x['status'] in ['已读待策略检验','需要回查']];xs.sort(key=lambda x:(0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
 discovery=[{'unit_id':u['id'],'source':u['path'],'action':'尚无人工确认的定义位置；读取实际题型段落后登记，不能按题号猜型或把机器未定位当无题'} for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in items)]
 discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
 category_source_scope=[]
 no_data=load_no_data_inspections(R,cat)
-if category=='资料分析':
+if category in ['资料分析','中心句与排序']:
  for u in cat:
   unit_items=[x for x in items if x['unit_id']==u['id']]
-  data_items=[x for x in unit_items if x['category']==category]
+  data_items=[x for x in unit_items if x['category']=='资料分析']
   l=ledger[u['id']]
   text_covered=set(l.get('text_read_pages',[]))==set(range(1,l['pages']+1))
   baseline_covered=(u['id']=='2026-副省级-主卷' and len(read(ROOT/'本地作答/2026副省级/核验与教学/逐题核验与教学.json'))==135)
   all_located_classified=bool(unit_items) and all(x['actual_task'] is not None for x in unit_items)
-  section_check=l.get('category_scope_checks',{}).get(category)
+  section_check=l.get('category_scope_checks',{}).get('资料分析')
   if section_check:
    assert (R/section_check['evidence']).is_file()
    if section_check['status']=='实际检查未见资料分析':
@@ -148,8 +163,30 @@ if category=='资料分析':
   # question was reviewed. Routing never promotes reading or strategy status.
   needs_reading=not (section_check or ((text_covered or baseline_covered) and all_located_classified))
   category_source_scope.append({'unit_id':u['id'],'source':u['path'],'reviewed_source_positions':sum(x['method'] is not None for x in data_items),'known_pending_positions':sum(x['status'] in ['已读待策略检验','需要回查'] for x in data_items),'needs_actual_section_reading':needs_reading,'no_data_inspected':u['id'] in no_data,'basis':'实际模块与边界检查未见资料；不增加阅读或策略检验题数' if u['id'] in no_data else '局部阅读不证明资料段已覆盖；读取实际段落核未登记题，旧答复用' if needs_reading else '实际资料段已人工登记全量处理；其他模块不据此标已读' if section_check else '已有整卷阅读或135题基线与实际任务标签；已读资料仍按逐题证据验收'})
+data_source_scope=category_source_scope
+if category=='中心句与排序':
+ # Task words only prioritize already-read candidates. They never set a type,
+ # mark a strategy valid, or establish a shared-material boundary.
+ def structure_priority(row):
+  task=row['actual_task'] or ''
+  return 2 if '排序' in task else 1 if ('填' in task or '插入' in task) else 0
+ xs.sort(key=lambda x:(structure_priority(x),0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
+ category_source_scope=[]
+ for u in cat:
+  actual=[x for x in items if x['unit_id']==u['id'] and x['category']==category]
+  check=ledger[u['id']].get('category_scope_checks',{}).get(category)
+  scope_confirmed=bool(check and check.get('status')=='实际任务范围已逐题确认' and check.get('evidence') and (R/check['evidence']).is_file())
+  category_source_scope.append({'unit_id':u['id'],'source':u['path'],
+   'known_positions':len(actual),'reviewed_source_positions':sum(bool(x['method']) for x in actual),
+   'known_pending_positions':sum(x['status'] in ['已读待策略检验','需要回查'] for x in actual),
+   'needs_actual_section_reading':not scope_confirmed,
+   'basis':'已有标签不是整类完整范围；须核实际言语/篇章任务和共享材料，不以固定题号推算'})
 category_discovery=[dict(x,action='读取原卷实际资料段，确认题目及材料组边界；不按题号猜型，不把机器未定位当无题') for x in category_source_scope if x['needs_actual_section_reading']]
 category_discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
 stage='检验已读'+category if xs else '读取并分流尚未覆盖的资料段' if category_discovery else '资料已读队列清空，待全量范围验收' if category=='资料分析' else '读取并分流尚未登记定义的来源' if discovery else '来源分流已登记，待教学与遗留回查'
-write(R/'策略下一批.json',{'capacity':20,'category':category,'stage':stage,'question':'资料分析先核统计对象、口径和可求性，再选择运算；复用旧首答，不能由答案一致代替策略执行' if definition_finished else '检验当前分支是否能识别并执行规则、过程与案例任务；先复用已有首答，未读来源先分流，不能把已读队列清空视为全量完成','items':[{'source_id':x['source_id'],'pages':x['pages'],'actual_task':x['actual_task'],'evidence_links':x['evidence_links']} for x in xs[:20]],'discovery_units':discovery,'category_source_scope':category_source_scope,'category_discovery_units':category_discovery,'no_definition_inspections':[{'unit_id':u,'evidence_file':'定义来源无题检查.json','scope':r['scope']} for u,r in no_definition.items()],'completion_note':'已读待检验队列清空不等于资料分析全量完成；尚未覆盖资料段继续阅读分流，争议、教学、个人迁移分别验收' if category=='资料分析' else '待检题清单为空不证明50来源定义检验完成；分流、争议、知识缺口及教学/个人迁移仍分别验收','rule':'20题默认；复杂共享减10，实际原题题组不拆；未读题另排，不跳过全50范围'})
+if category=='中心句与排序':
+ stage='主旨分支旧题检验；共享题组先核完整材料'
+ category_discovery=[dict(x,action='核实际主旨、填句、排序与篇章任务范围；查共享材料，保留其他类别') for x in category_source_scope if x['needs_actual_section_reading']]
+ category_discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
+write(R/'策略下一批.json',{'capacity':20,'category':category,'stage':stage,'question':'先检主旨/意图/描述概括/标题是否同一路径，后填句再排序；复用首答与既有修订，共享材料边界先核' if category=='中心句与排序' else '资料分析先核统计对象、口径和可求性，再选择运算；复用旧首答，不能由答案一致代替策略执行' if definition_finished else '检验当前分支是否能识别并执行规则、过程与案例任务；先复用已有首答，未读来源先分流，不能把已读队列清空视为全量完成','items':[{'source_id':x['source_id'],'pages':x['pages'],'actual_task':x['actual_task'],'evidence_links':x['evidence_links']} for x in xs[:20]],'discovery_units':discovery,'category_source_scope':category_source_scope,'data_source_scope':data_source_scope,'batch_kind':'已读候选；执行前核共享材料，题组不得拆开' if category=='中心句与排序' else '逐题检验批','category_discovery_units':category_discovery,'no_definition_inspections':[{'unit_id':u,'evidence_file':'定义来源无题检查.json','scope':r['scope']} for u,r in no_definition.items()],'completion_note':str(sum(x['category']=='中心句与排序' for x in items))+'为现有标签数量，非全量题数；50主卷实际范围尚待核，个人迁移另计' if category=='中心句与排序' else '已读待检验队列清空不等于资料分析全量完成；尚未覆盖资料段继续阅读分流，争议、教学、个人迁移分别验收' if category=='资料分析' else '待检题清单为空不证明50来源定义检验完成；分流、争议、知识缺口及教学/个人迁移仍分别验收','rule':'20题默认；复杂共享减10，实际原题题组不拆；未读题另排，不跳过全50范围'})
 print(json.dumps({'units':len(summary),'positions':len(items),'states':dict(collections.Counter(x['status'] for x in items)),'unresolved_groups':len(gaps),'next':[x['source_id'] for x in xs[:20]]},ensure_ascii=False))

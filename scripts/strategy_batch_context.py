@@ -72,6 +72,18 @@ for item in items:
             known = {'first_answer': first, 'working_answer': record.get('working_answer', first.get('answer') if isinstance(first, dict) else None),
                      'issues': record.get('issues', []), 'file': path.name,
                      'reference_exposure': record.get('review_type', indexed.get('reference_exposure'))}
+    # Existing baseline teaching has a frozen first answer and a later working
+    # answer even before a versioned strategy review is linked. Surface both.
+    first = indexed.get('first_answer') or {}
+    if not known and first.get('file','').endswith('逐题核验与教学.json'):
+        path = ROOT / first['file']
+        index = int(first['pointer'].lstrip('/'))
+        baseline = read(path)[index]
+        assert baseline['题号'] == int(question)
+        assert baseline['首答'] == first['answer']
+        known = {'first_answer': first, 'working_answer': baseline['本轮工作答案'],
+                 'issues': [baseline['边界与迁移提醒']], 'file': first['file'],
+                 'reference_exposure': '复用已经保存的基线教学与核验；不是新首答或未接触参考'}
     print(json.dumps({'source_id': item['source_id'], 'actual_task': indexed.get('actual_task', item.get('actual_task')),
                       'indexed_first_answer': indexed.get('first_answer'), 'known_review': known,
                       'old_first_candidates': old_answers, 'known_corrections': corrections,

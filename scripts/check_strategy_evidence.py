@@ -78,12 +78,12 @@ for unit_id in no_definition:
 assert {u['unit_id'] for u in next_batch.get('no_definition_inspections',[])}==set(no_definition)
 expected_discovery={u['id'] for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in inventory)}
 assert {u['unit_id'] for u in next_batch['discovery_units']}==expected_discovery
-if next_batch.get('category')!='资料分析' and not next_batch['items'] and expected_discovery:
+if next_batch.get('category')=='定义判断' and not next_batch['items'] and expected_discovery:
  assert next_batch['stage']=='读取并分流尚未登记定义的来源'
-if next_batch.get('category')!='资料分析' and not next_batch['items'] and not expected_discovery:
+if next_batch.get('category')=='定义判断' and not next_batch['items'] and not expected_discovery:
  assert next_batch['stage']=='来源分流已登记，待教学与遗留回查'
-if next_batch.get('category')=='资料分析':
- scope=next_batch['category_source_scope']
+if next_batch.get('category') in ['资料分析','中心句与排序']:
+ scope=next_batch.get('data_source_scope',next_batch['category_source_scope'])
  no_data=load_no_data_inspections(R,cat)
  assert {x['unit_id'] for x in scope if x.get('no_data_inspected')}==set(no_data)
  for uid in no_data:
@@ -93,14 +93,20 @@ if next_batch.get('category')=='资料分析':
   assert check['status']=='实际检查未见资料分析' and check['questions']==[]
   assert not next(x for x in scope if x['unit_id']==uid)['needs_actual_section_reading']
  assert len(scope)==len(cat) and {x['unit_id'] for x in scope}=={x['id'] for x in cat}
- pending_sections=next_batch['category_discovery_units']
+ pending_sections=next_batch['category_discovery_units'] if next_batch['category']=='资料分析' else [x for x in scope if x['needs_actual_section_reading']]
  assert {x['unit_id'] for x in pending_sections}=={x['unit_id'] for x in scope if x['needs_actual_section_reading']}
- if not next_batch['items']:
+ if next_batch['category']=='资料分析' and not next_batch['items']:
   assert next_batch['stage']==('读取并分流尚未覆盖的资料段' if pending_sections else '资料已读队列清空，待全量范围验收')
  audit=read(R/'定义覆盖验收.json')
  assert audit['source_units']==50 and audit['reviewed_positions']==sum(audit_by[sid]['category']=='定义判断' for sid in reviewed)
  assert not read(R/'策略回查清单.json')['pending']
- assert all(audit_by[x['source_id']]['category']=='资料分析' for x in next_batch['items'])
+ assert all(audit_by[x['source_id']]['category']==next_batch['category'] for x in next_batch['items'])
+if next_batch.get('category')=='中心句与排序':
+ scope=next_batch['category_source_scope']
+ assert len(scope)==50 and {x['unit_id'] for x in scope}=={x['id'] for x in cat}
+ assert next_batch['batch_kind']=='已读候选；执行前核共享材料，题组不得拆开'
+ assert all(audit_by[x['source_id']]['category']=='中心句与排序' for x in next_batch['items'])
+ assert {x['unit_id'] for x in next_batch['category_discovery_units']}=={x['unit_id'] for x in scope if x['needs_actual_section_reading']}
 data_audit_path=R/'资料覆盖验收.json'
 if data_audit_path.exists():
  data_audit=read(data_audit_path)
