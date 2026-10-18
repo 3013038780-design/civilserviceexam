@@ -19,9 +19,11 @@ inventory = read(LOCAL / '逐题策略检验清单.json')['items']
 by_id = {x['source_id']: x for x in inventory}
 queue_source = '策略下一批.json'
 category = batch.get('category')
-if not items and (LOCAL / '续接检查点.json').exists():
-    teaching = read(LOCAL / '续接检查点.json').get('next_batch', {})
+teaching = read(LOCAL / '续接检查点.json').get('next_batch', {}) if (LOCAL / '续接检查点.json').exists() else {}
+if not items or teaching.get('use_explicit_questions'):
     ids = teaching.get('questions', [])
+    if teaching.get('use_explicit_questions') and not ids:
+        raise ValueError('Explicit checkpoint batch has no source IDs')
     missing = [sid for sid in ids if sid not in by_id]
     if missing:
         raise ValueError('Checkpoint source IDs not found: ' + ', '.join(missing))

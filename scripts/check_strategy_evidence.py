@@ -214,3 +214,35 @@ for group in practice.values():
  assert len(group['questions'])==3
  assert group['mode']=='guided-transfer/v1' and all(set(q)=={'source_id','label','pages','image','hint'} and q['image'].startswith('data:image/jpeg;base64,') for q in group['questions'])
 print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_definition_positions':sum(audit_by[sid]['category']=='定义判断' for sid in reviewed),'reviewed_by_category':dict(collections.Counter(audit_by[sid]['category'] for sid in reviewed)),'old80_assessment':dict(collections.Counter(x['assessment'] for x in reviews)),'review_states':dict(collections.Counter(x['status'] for x in inventory if x['method'])),'visual_branches':sum('teaching' in c for c in cards),'auto_read_or_validation_promotion':False},ensure_ascii=False))
+
+# A locally tested candidate must not silently replace the current teaching rule
+# or promote pending sources to validated current-rule evidence.
+candidate_path=R/'主旨新版候选_回查清单.json'
+if candidate_path.exists():
+ candidate=read(candidate_path)
+ if not candidate['adopted']:
+  assert by['main-claim']['version']==candidate['current_version']
+  draft=read(R/candidate['candidate_file'])
+  version=hashlib.sha256(json.dumps({k:draft[k] for k in ['signal','steps','stop','boundary']},sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:12]
+  assert draft['version']==candidate['candidate_version']==version
+  complete=set(candidate['completed_sources']);pending=set(candidate['pending_sources']);routed={x['source_id'] for x in candidate['routed_out']}
+  assert not (complete&pending or complete&routed or pending&routed)
+  assert complete|pending|routed==set(candidate['all_candidates'])
+  assert (complete|pending|routed)<=set(audit_by)
+  batches=[read(R/name) for name in candidate.get('batch_evidence_files',[candidate['batch_evidence']])]
+  candidate_cases=[x for batch in batches for x in batch['cases']]
+  assert len(candidate_cases)==len({x['source_id'] for x in candidate_cases})==len(complete)
+  assert {x['source_id'] for x in candidate_cases}==complete
+  assert all(x['candidate_method']['version']==version and x['first_answer'] for x in candidate_cases)
+  for case in candidate_cases:
+   first=case['first_answer'];path=ROOT/first['file']
+   if not path.exists():path=R/first['file']
+   pointer=first['pointer'].strip('/').split('/')
+   if path.suffix=='.jsonl':
+    assert pointer[0]=='line';value=json.loads(path.read_text().splitlines()[int(pointer[1])-1]);answer=value['首答']
+   else:
+    value=read(path)
+    for token in pointer:value=value[int(token)] if isinstance(value,list) else value[token]
+    answer=value['answer'] if isinstance(value,dict) else value
+   assert answer==first['answer'],case['source_id']
+  print(json.dumps({'main_claim_candidate':version,'adopted':False,'rechecked_candidates':len(complete),'pending_candidates':len(pending),'routed_other_tasks':len(routed),'current_rule_unchanged':True},ensure_ascii=False))
