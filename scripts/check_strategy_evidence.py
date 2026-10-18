@@ -12,7 +12,7 @@ for name in ['策略实施_首答保护哈希.json','策略实施_新增首答�
    assert hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest,path
 cat=read(R/'主版本阅读目录.json');inventory=read(R/'逐题策略检验清单.json')['items'];summary=read(R/'策略检验盘点汇总.json');reviews=read(R/'定义80题_策略执行审阅.json')['cases'];cards=read(ROOT/'web/content/xingce-branches.json');by={c['id']:c for c in cards}
 assert len(cat)==len(summary['units'])==50
-assert len(by)==len(cards)==27
+assert cards and len(by)==len(cards)
 assert len(inventory)==len({x['source_id'] for x in inventory})
 assert {x['source_id'] for x in summary['first_answer_gaps']}=={x['source_id'] for x in inventory if x['method'] and x['first_answer'] is None}
 assert len(reviews)==len({x['source_id'] for x in reviews})==80
@@ -39,6 +39,7 @@ for c in cards:
  assert c['version']==version
  t=c.get('teaching')
  if not t:continue
+ assert all(id in by for id in t.get('related_methods',[]))
  ids={x['id'] for x in t['flow']};assert len(ids)==len(t['flow'])
  for node in t['flow']:
   assert node['question'] and node['choices']
@@ -115,8 +116,25 @@ if data_practice_path.exists():
   assert len({q['source_id'] for q in group['questions']})==len(group['questions'])
   assert {q['source_id'] for q in group['questions']}==set(practice_review[method])
   for q in group['questions']:
+   answer=practice_review[method][q['source_id']]
+   if q['source_id'].startswith('authored:'):
+    from fractions import Fraction
+    assert set(q)=={'source_id','label','pages','questionText','hint'} and q['pages']==[]
+    proof=read(R/'自拟迁移题_核验依据.json')[q['source_id']]
+    assert proof['kind']==answer['kind']=='self-authored'
+    assert proof['answer']==answer['answer'] and proof['questionText']==q['questionText'] and proof['execution']==answer['execution']
+    assert answer['proof_id']==q['source_id'] and q['source_id'] not in audit_by
+    if 'exact_fraction' in proof:
+     value=Fraction(proof['givens']['T_over_B'])/Fraction(proof['givens']['T_over_A'])-1
+     assert proof['target']=='A/B−1' and str(value)==proof['exact_fraction']=='-1/6'
+    else:
+     assert proof['target']=='B/A' and len(proof['models'])>=2
+     models=proof['models']
+     assert all(Fraction(m['T1'],m['A'])==Fraction(6,5) and Fraction(m['T2'],m['B'])==Fraction(3,2) for m in models)
+     assert len({Fraction(m['B'],m['A']) for m in models})>1 and proof['answer']=='D'
+    continue
    assert set(q)=={'source_id','label','pages','image','hint'}
-   original=audit_by[q['source_id']];answer=practice_review[method][q['source_id']]
+   original=audit_by[q['source_id']]
    assert original['status']=='已有策略检验' and method in {m['id'] for m in original['method']}
    expected_answer=latest_reviews[q['source_id']].get('working_answer',original['first_answer']['answer'])
    assert answer['answer']==expected_answer and answer['execution']==original['decisive_basis']

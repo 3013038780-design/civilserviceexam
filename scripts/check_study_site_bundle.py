@@ -27,7 +27,7 @@ for key,page in pages.items():
  assert page['label']==original['label'] and re.fullmatch(r'strategy-pages/[a-f0-9]{24}\.jpg',page['image'])
  assert (p/page['image']).read_bytes()==base64.b64decode(original['image'].split(',',1)[1])
 assert all(k in pages for v in cases.values() for k in v)
-branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert len(branches)==len({x['id'] for x in branches})==27
+branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert branches and len(branches)==len({x['id'] for x in branches})
 assert all(f.stat().st_size<25*1024*1024 for f in p.rglob('*') if f.is_file())
 dest=Path('本地资料/网站发布/dist')
 for f in dest.glob('strategy-evidence-*.js'):

@@ -15,3 +15,9 @@
 
 /* Transfer practice keeps the first response and assistance exposure separate. */
 .practice-question{margin:20px 0;padding:18px;border:1px solid #cadbd0;border-radius:12px;background:#fffdf8}.practice-question fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:16px 0;border:1px solid #ccd9d0;border-radius:8px;padding:14px}.practice-question legend{font-weight:700;padding:0 6px}.practice-question label{display:flex;flex-direction:column;gap:8px}.practice-question input[type=number],.practice-question select,.practice-question textarea{font:inherit;padding:9px;border:1px solid #b9cbbf;border-radius:7px;max-width:100%;box-sizing:border-box;background:white}.practice-question .practice-seen-label{flex-direction:row;align-items:center;grid-column:1/-1}.practice-difficulty-label{grid-column:1/-1}.practice-question textarea{min-height:85px;width:100%}.practice-question details{margin-top:12px}.practice-reveal-body{line-height:1.8;margin:10px 0}.practice-status{line-height:1.7}@media(max-width:700px){.practice-question{padding:12px}.practice-question fieldset{grid-template-columns:1fr}}
+
+.practice-text{white-space:pre-wrap;line-height:1.9;padding:16px;background:#f5f8f2;border-radius:8px}
+
+.relation-map{margin:18px 0;padding:12px;background:#f8faf7;border:1px solid #ccdcd1;border-radius:12px}.relation-map svg{display:block;width:100%;max-width:580px;margin:auto}.relation-map figcaption{font-size:.88em;line-height:1.7;color:#426457;margin-top:8px}
+
+.method-picker button small{display:block;font-size:.72em;font-weight:400;margin-top:5px;line-height:1.5;opacity:.85}.branch-cross-year{max-height:650px;overflow:auto}.same-paper-examples{margin-top:24px}
