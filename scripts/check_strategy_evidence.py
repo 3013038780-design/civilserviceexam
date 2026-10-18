@@ -50,7 +50,11 @@ for c in cards:
  ids={x['id'] for x in t['flow']};assert len(ids)==len(t['flow'])
  for node in t['flow']:
   assert node['question'] and node['choices']
-  for edge in node['choices']:assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支']
+  for edge in node['choices']:
+   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支']
+   if edge['to']=='转构成图或图表定位分支':
+    assert {'composition-chart','chart-reading'}<=set(t.get('related_methods',[]))
+    assert all(by[id]['category']==c['category'] for id in ['composition-chart','chart-reading'])
  for ex in [t['success'],t['failure']]:
   assert all(s['node'] in ids and s['text'] for s in ex['steps'])
 audit_by={x['source_id']:x for x in inventory}
