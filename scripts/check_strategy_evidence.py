@@ -1,6 +1,7 @@
 """Check provenance/state boundaries and diagram references, without re-solving questions."""
 from pathlib import Path
 import collections,hashlib,json
+from definition_source_checks import load_no_definition_inspections
 ROOT=Path(__file__).resolve().parents[1];R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 for name in ['策略实施_首答保护哈希.json','策略实施_新增首答保护哈希.json']:
@@ -49,10 +50,16 @@ for x in reviews:
 
 practice=read(R/'定义样板_试用入口.json')
 next_batch=read(R/'策略下一批.json')
-expected_discovery={u['id'] for u in cat if not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in inventory)}
+no_definition=load_no_definition_inspections(R,cat)
+for unit_id in no_definition:
+ assert not any(x['unit_id']==unit_id and x['category']=='定义判断' for x in inventory),unit_id
+assert {u['unit_id'] for u in next_batch.get('no_definition_inspections',[])}==set(no_definition)
+expected_discovery={u['id'] for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in inventory)}
 assert {u['unit_id'] for u in next_batch['discovery_units']}==expected_discovery
 if not next_batch['items'] and expected_discovery:
  assert next_batch['stage']=='读取并分流尚未登记定义的来源'
+if not next_batch['items'] and not expected_discovery:
+ assert next_batch['stage']=='来源分流已登记，待教学与遗留回查'
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3

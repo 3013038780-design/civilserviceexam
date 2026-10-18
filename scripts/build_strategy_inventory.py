@@ -1,6 +1,7 @@
 """Conservative evidence linkage; no reading/validation inferred from extraction or answers."""
 from pathlib import Path
 import json,re,unicodedata,hashlib,collections,datetime
+from definition_source_checks import load_no_definition_inspections
 ROOT=Path(__file__).resolve().parents[1]; R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 def write(p,d):
@@ -100,6 +101,9 @@ for row in rows.values():
  row['candidate_methods']=[c['id'] for c in cards if c['category']=={'定义判断':'definition','资料分析':'data','中心句与排序':'structure','阅读理解':'reading','选词填空':'cloze','逻辑判断':'logic','类比推理':'analogy'}.get(row['category'])]
  row['candidate_method_note']='仅按已有导航提供候选，不是方法执行或效果证据'
 items=sorted(rows.values(),key=lambda x:(order[x['unit_id']],x['question']))
+no_definition=load_no_definition_inspections(R,cat)
+for unit_id in no_definition:
+ assert not any(x['unit_id']==unit_id and x['category']=='定义判断' for x in items),unit_id
 summary=[]
 for u in cat:
  xs=[x for x in items if x['unit_id']==u['id']];l=ledger[u['id']];summary.append({'unit_id':u['id'],'source':u['path'],'text_read_pages':l.get('text_read_pages',[]),'visual_read_pages':l.get('visual_read_pages',[]),'reading_stage':l.get('stage'),'indexed_positions':len(xs),'manual_task_positions':sum(x['actual_task'] is not None for x in xs),'states':dict(collections.Counter(x['status'] for x in xs)),'completeness':'仅索引定位和已有证据关联，不证明自动题号无遗漏；不开展版本审计'})
@@ -107,7 +111,7 @@ write(R/'逐题策略检验清单.json',{'schema':'strategy-audit/v1','saved_at'
 write(R/'策略检验盘点汇总.json',{'units':summary,'counts':{'units':len(cat),'indexed_positions':len(items),'manual_task_positions':sum(x['actual_task'] is not None for x in items),'states':dict(collections.Counter(x['status'] for x in items))},'unresolved_links_and_locations':gaps,'cards':[{'id':c['id'],'category':c['category'],'title':c['title'],'version':c.get('version'),'note':'例题扩展保持同一方法id，语义合并须人工判断'} for c in cards]})
 # Explicit next 20 already-read definition positions, year descending, catalogue order.
 xs=[x for x in items if x['category']=='定义判断' and x['status'] in ['已读待策略检验','需要回查']];xs.sort(key=lambda x:(0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
-discovery=[{'unit_id':u['id'],'source':u['path'],'action':'尚无人工确认的定义位置；读取实际题型段落后登记，不能按题号猜型或把机器未定位当无题'} for u in cat if not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in items)]
+discovery=[{'unit_id':u['id'],'source':u['path'],'action':'尚无人工确认的定义位置；读取实际题型段落后登记，不能按题号猜型或把机器未定位当无题'} for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in items)]
 discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
-write(R/'策略下一批.json',{'capacity':20,'stage':'检验已读定义' if xs else '读取并分流尚未登记定义的来源','question':'检验当前分支是否能识别并执行规则、过程与案例任务；先复用已有首答，未读来源先分流，不能把已读队列清空视为全量完成','items':[{'source_id':x['source_id'],'pages':x['pages'],'actual_task':x['actual_task'],'evidence_links':x['evidence_links']} for x in xs[:20]],'discovery_units':discovery,'completion_note':'待检题清单为空不证明50来源定义检验完成；分流、争议、知识缺口及教学/个人迁移仍分别验收','rule':'20题默认；复杂共享减10，实际原题题组不拆；未读题另排，不跳过全50范围'})
+write(R/'策略下一批.json',{'capacity':20,'stage':'检验已读定义' if xs else '读取并分流尚未登记定义的来源' if discovery else '来源分流已登记，待教学与遗留回查','question':'检验当前分支是否能识别并执行规则、过程与案例任务；先复用已有首答，未读来源先分流，不能把已读队列清空视为全量完成','items':[{'source_id':x['source_id'],'pages':x['pages'],'actual_task':x['actual_task'],'evidence_links':x['evidence_links']} for x in xs[:20]],'discovery_units':discovery,'no_definition_inspections':[{'unit_id':u,'evidence_file':'定义来源无题检查.json','scope':r['scope']} for u,r in no_definition.items()],'completion_note':'待检题清单为空不证明50来源定义检验完成；分流、争议、知识缺口及教学/个人迁移仍分别验收','rule':'20题默认；复杂共享减10，实际原题题组不拆；未读题另排，不跳过全50范围'})
 print(json.dumps({'units':len(summary),'positions':len(items),'states':dict(collections.Counter(x['status'] for x in items)),'unresolved_groups':len(gaps),'next':[x['source_id'] for x in xs[:20]]},ensure_ascii=False))
