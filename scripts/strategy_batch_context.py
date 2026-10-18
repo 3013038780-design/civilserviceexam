@@ -83,7 +83,7 @@ for item in items:
                 value = value[int(token)] if isinstance(value, list) else value[token]
             if not isinstance(value, dict) or value.get('unit_id') != unit or str(value.get('question')) != question:
                 continue
-            if value.get('review_note'):
+            if value.get('review_note') or value.get('review'):
                 correction = {'file': link['file'], 'pointer': link['pointer'], 'record': value}
                 if correction not in corrections:
                     corrections.append(correction)
