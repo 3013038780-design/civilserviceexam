@@ -76,6 +76,7 @@ def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--public-only',action='store_true');args=parser.parse_args()
  public={'docs':[dict(id=id,path=path,title=title,group=group,description=desc,content=(ROOT/path).read_text()) for id,path,title,group,desc in DOCS],'assets':{},'methods':json.loads((WEB/'content/xingce-methods.json').read_text()),'strategyCards':json.loads((WEB/'content/xingce-branches.json').read_text())}
  public['crossYearNotes']=cross_year_notes(public['strategyCards'])
+ public['researchScope']=json.loads((ROOT/'research-scope.json').read_text())
  for p in [ROOT/'图示/行测十一类六维任务图.png',ROOT/'行策20题试做结果.jpg']:
   public['assets'][str(p.relative_to(ROOT))]='assets/'+p.name;(WEB/'assets').mkdir(exist_ok=True);shutil.copy2(p,WEB/'assets'/p.name)
  (WEB/'public-data.js').write_text('window.STUDY_PUBLIC='+json_script(public)+';\n')

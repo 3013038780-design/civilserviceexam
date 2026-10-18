@@ -125,6 +125,12 @@
     const a=examplesFor(c.id);if(!a.length)return '仅2026同卷示范 · 跨年待整理';
     return exampleCountLabel(a);
   }
+  function researchScopeNote(items){
+    const cutoff=PUBLIC.researchScope?.minimum_year_inclusive;
+    if(!Number.isInteger(cutoff))return '';
+    const reviewed=items.filter(x=>x.kind==='review'),current=reviewed.filter(x=>x.year>=cutoff).length,older=reviewed.length-current;
+    return `<p class="subtle">后续未分析题只推进${cutoff}年（含）及以后；早期成果保留。${reviewed.length?`本类已检验来源：当前年份范围${current}个，早期保留${older}个；包含争议和跨卷同题，不等于独立题数。`:''}</p>`;
+  }
   function branchExamples(c){
     const a=(PUBLIC.methods||[]).flatMap(category=>examplesFor(category.id)).filter(x=>(x.methods||[]).some(m=>m.id===c.id));
     if(!a.length)return '';
@@ -139,7 +145,7 @@
   function crossYearEntry(c){
     const a=examplesFor(c.id);if(!a.length)return '';
     const years=[...new Set(a.flatMap(x=>x.years||[x.year]))].filter(Number.isFinite).sort((a,b)=>a-b);
-    return `<aside class="cross-year-entry"><strong>本类不只2026：${years[0]}—${years[years.length-1]}年</strong><p>${exampleCountLabel(a)}，不代表整类全量完成。每张方法卡下直接列出跨年题例，也可按年份查整类题例库。</p><button class="soft" data-example-library>按年份找本类题例 ↓</button></aside>`;
+    return `<aside class="cross-year-entry"><strong>本类不只2026：${years[0]}—${years[years.length-1]}年</strong><p>${exampleCountLabel(a)}，不代表整类全量完成。每张方法卡下直接列出跨年题例，也可按年份查整类题例库。</p>${researchScopeNote(a)}<button class="soft" data-example-library>按年份找本类题例 ↓</button></aside>`;
   }
   function mixedYears(items){
     const groups=new Map();for(const x of items){if(!groups.has(x.year))groups.set(x.year,[]);groups.get(x.year).push(x);}
