@@ -42,6 +42,7 @@ if args.unit:
     queue_source = '--unit'
 print(json.dumps({'queue_source': queue_source, 'category': category, 'items': len(items)}, ensure_ascii=False))
 source_records = {}
+linked_review_cache = {}
 for item in items:
     unit, question = item['source_id'].rsplit(':', 1)
     if unit not in source_records:
@@ -64,6 +65,28 @@ for item in items:
                 corrections.append({'file': path.name, 'pointer': '/corrections/' + str(index),
                                     'record': change})
     indexed = by_id.get(item['source_id'], {})
+    # Mixed-category batches may not start with a year in their filename.
+    # Follow only indexed, already-saved review/correction links, never a new
+    # target-reference file, and surface the exact note without inventing a
+    # working answer from its wording.
+    if indexed.get('first_answer'):
+        for link in indexed.get('evidence_links', []):
+            if link.get('role') != '核验候选' or '核验与修订' not in link['file']:
+                continue
+            path = LOCAL / link['file']
+            if not path.exists():
+                path = ROOT / link['file']
+            if path not in linked_review_cache:
+                linked_review_cache[path] = read(path)
+            value = linked_review_cache[path]
+            for token in link['pointer'].strip('/').split('/'):
+                value = value[int(token)] if isinstance(value, list) else value[token]
+            if not isinstance(value, dict) or value.get('unit_id') != unit or str(value.get('question')) != question:
+                continue
+            if value.get('review_note'):
+                correction = {'file': link['file'], 'pointer': link['pointer'], 'record': value}
+                if correction not in corrections:
+                    corrections.append(correction)
     known = {}
     if indexed.get('status') in ['已有策略检验', '存在争议', '需要回查']:
         links = [x for x in indexed.get('evidence_links', []) if x.get('role') == '逐题策略机制审阅']

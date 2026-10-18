@@ -229,6 +229,12 @@ if candidate_path.exists():
   assert not (complete&pending or complete&routed or pending&routed)
   assert complete|pending|routed==set(candidate['all_candidates'])
   assert (complete|pending|routed)<=set(audit_by)
+  for decision in candidate['routed_out']:
+   if not decision.get('classification_confirmed'):continue
+   row=audit_by[decision['source_id']]
+   assert row['category']==decision['target_category']
+   assert any(x['role']=='实际设问分流审阅，非策略检验' for x in row['evidence_links'])
+   if not row['method']:assert row['status']=='已读待策略检验'
   batches=[read(R/name) for name in candidate.get('batch_evidence_files',[candidate['batch_evidence']])]
   candidate_cases=[x for batch in batches for x in batch['cases']]
   assert len(candidate_cases)==len({x['source_id'] for x in candidate_cases})==len(complete)

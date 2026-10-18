@@ -72,6 +72,20 @@ for i,c in enumerate(read(p)):
  if row:
   row['evidence_links'].append({'file':str(p.relative_to(ROOT)),'pointer':'/'+str(i),'role':'已有逐题核验教学；版本化策略执行待关联'})
   row['first_answer']={'answer':c['首答'],'file':str(p.relative_to(ROOT)),'pointer':'/'+str(i),'status':'既有冻结首答的教学副本，原件保持'}
+# Explicit task routing is independent of adopting a candidate solving rule.
+# Only human-confirmed original-question decisions can change navigation;
+# these links never promote reading or strategy status.
+routing_path=R/'主旨新版候选_回查清单.json'
+if routing_path.exists():
+ for index,decision in enumerate(read(routing_path).get('routed_out',[])):
+  if not decision.get('classification_confirmed'):continue
+  assert decision['target_category'] in ['中心句与排序','阅读理解']
+  evidence=read(R/decision['classification_evidence'])
+  assert any(x['source_id']==decision['source_id'] for x in evidence['routed_out'])
+  row=rows[decision['source_id']]
+  row['category']=decision['target_category'];row['actual_task']=decision['actual_task']
+  row['classification_status']='实际题面审阅确认分流，未据此提升策略检验'
+  row['evidence_links'].append({'file':routing_path.name,'pointer':'/routed_out/'+str(index),'role':'实际设问分流审阅，非策略检验'})
 # Only reviewed explicit evidence can promote strategy status.
 def link_review_metadata(row,case):
  if case.get('actual_task'):
@@ -169,7 +183,7 @@ if category=='中心句与排序':
  # mark a strategy valid, or establish a shared-material boundary.
  def structure_priority(row):
   task=row['actual_task'] or ''
-  return 2 if '排序' in task else 1 if ('填' in task or '插入' in task) else 0
+  return 3 if '下文' in task else 2 if '排序' in task else 1 if ('填' in task or '插入' in task) else 0
  xs.sort(key=lambda x:(structure_priority(x),0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
  category_source_scope=[]
  for u in cat:
