@@ -71,13 +71,23 @@ for i,c in enumerate(read(p)):
   row['evidence_links'].append({'file':str(p.relative_to(ROOT)),'pointer':'/'+str(i),'role':'已有逐题核验教学；版本化策略执行待关联'})
   row['first_answer']={'answer':c['首答'],'file':str(p.relative_to(ROOT)),'pointer':'/'+str(i),'status':'既有冻结首答的教学副本，原件保持'}
 # Only reviewed explicit evidence can promote strategy status.
+def link_review_first_answer(row,case):
+ # Explicit reviewed links take precedence over filename guesses, including
+ # a documented missing first answer. This changes the index, never originals.
+ if 'first_answer' not in case:return
+ row['first_answer']=case['first_answer']
+ first=case['first_answer']
+ if isinstance(first,dict) and first.get('file'):
+  link={k:first[k] for k in ['file','pointer','question'] if k in first}
+  link['role']='逐题审阅确认的首答来源（接触情况见原记录）'
+  if link not in row['evidence_links']:row['evidence_links'].append(link)
 p=R/'定义80题_策略执行审阅.json'
 if p.exists():
  for c in read(p)['cases']:
-  key=c['source_id'];row=rows[key];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure='已接触目标参考；本轮复用旧首答及已存核验作机制审阅，不称新独立作答',issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'})
+  key=c['source_id'];row=rows[key];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure='已接触目标参考；本轮复用旧首答及已存核验作机制审阅，不称新独立作答',issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'});link_review_first_answer(row,c)
 for p in sorted(R.glob('定义策略检验_*.json'),key=lambda path:read(path).get('saved_at','')):
  for c in read(p)['cases']:
-  row=rows[c['source_id']];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure=c.get('review_type','接触状态见该检验原记录'),issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'})
+  row=rows[c['source_id']];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure=c.get('review_type','接触状态见该检验原记录'),issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'});link_review_first_answer(row,c)
 cards=read(ROOT/'web/content/xingce-branches.json')
 current_versions={c['id']:c.get('version') for c in cards}
 for row in rows.values():

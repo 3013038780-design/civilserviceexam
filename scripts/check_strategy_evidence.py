@@ -9,11 +9,20 @@ assert len(by)==len(cards)==26
 assert len(inventory)==len({x['source_id'] for x in inventory})
 assert len(reviews)==len({x['source_id'] for x in reviews})==80
 reviewed={x['source_id'] for x in reviews}
+latest_reviews={x['source_id']:x for x in reviews}
 for p in R.glob('定义策略检验_*.json'):reviewed.update(x['source_id'] for x in read(p)['cases'])
+for p in sorted(R.glob('定义策略检验_*.json'),key=lambda path:read(path).get('saved_at','')):
+ for case in read(p)['cases']:latest_reviews[case['source_id']]=case
 for x in inventory:
  if x['status'] in ['已有策略检验','存在争议']:
   assert x['source_id'] in reviewed and x['method'] and x['decisive_basis']
   assert all(m['id'] in by and by[m['id']]['version']==m['version'] for m in x['method'])
+  case=latest_reviews[x['source_id']]
+  if 'first_answer' in case:
+   assert x['first_answer']==case['first_answer'],x['source_id']
+   if x['first_answer']:
+    link=x['first_answer'];assert (R/link['file']).is_file() or (ROOT/link['file']).is_file(),link
+    assert any(e['file']==link['file'] and e['role'].startswith('逐题审阅确认') for e in x['evidence_links'])
  if x['reading'].startswith('定位自抽取'):assert x['status']=='尚未阅读' and not x['method']
 for c in cards:
  version=hashlib.sha256(json.dumps({k:c[k] for k in ['signal','steps','stop','boundary']},sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:12]
