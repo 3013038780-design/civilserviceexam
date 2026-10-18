@@ -76,7 +76,7 @@
     return `<section class="strategy-teaching" aria-label="${esc(c.title)}的能力与决策流程"><h4>这条方法调用哪些能力</h4><ol class="ability-strip">${t.ability.map(a=>`<li>${esc(a)}</li>`).join('')}</ol><h4>拿到题，沿着问题走</h4><div class="decision-flow" role="group" aria-label="决策流程图">${t.flow.map(n=>`<section class="decision-node"><h5><span>${esc(n.id)}</span>${esc(n.question)}</h5><ul>${n.choices.map(ch=>`<li>${esc(ch.label)} <strong>→ ${esc(ch.to)}</strong></li>`).join('')}</ul></section>`).join('')}</div><p class="method-choice"><strong>为什么首选这条路：</strong>${esc(t.choice)}</p>${teachingExample(t.success,'success')}<details class="teaching-failure"><summary>看它在哪里容易失败或不能证明唯一</summary>${teachingExample(t.failure,'failure')}</details><p class="subtle">${esc(t.evidence_note)}</p></section>`;
   }
   function practiceRecords(){if(!records.practice||typeof records.practice!=='object'||Array.isArray(records.practice))records.practice={};return records.practice;}
-  function practiceStatus(v){const first=v.firstSubmission;return first?`首次保存：${first.choice}；${first.hintSeen||first.reviewSeen?'已接触提示或核验':'保存前未打开提示或核验'}。${v.hintSeen?' 已打开提示。':''}${v.reviewSeen?' 已打开核验。':''}`:'尚未保存选项；先选答案并填写用时。';}
+  function practiceStatus(v){const first=v.firstSubmission;return (first?`首次保存：${first.choice}；${first.hintSeen||first.reviewSeen?'已接触提示或核验':'保存前未打开提示或核验'}。`:'还没选答案；先选答案并填写用时。')+(v.hintSeen?' 已打开提示。':'')+(v.reviewSeen?' 已打开核验。':'');}
   function guidedPractice(c,p){
     return `<details class="strategy-practice guided-practice"><summary>先独立试用：${p.questions.length}题（答案单独展开）</summary><p>${esc(p.note)}</p>${p.questions.map((q,i)=>{
       const key=c.id+'|'+q.source_id,v=practiceRecords()[key]||{};
