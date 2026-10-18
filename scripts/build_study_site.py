@@ -220,6 +220,13 @@ def main():
  # Keep the originals in web/content, without publishing duplicate copies.
  local=OUT/'preview';shutil.copytree(WEB,local,dirs_exist_ok=True,ignore=shutil.ignore_patterns('content'))
  shutil.rmtree(local/'content',ignore_errors=True)
+ # The notes are views of card paragraphs, not a second copy of the teaching.
+ # Keep the portable/public editions unchanged; restore the hosted view before app.js.
+ hosted_public=copy.deepcopy(public)
+ hosted_public['crossYearNoteSources']=[[n['methods'][0]['id'],int(n['id'].rsplit('-',1)[1]),n['years']] for n in public['crossYearNotes']]
+ del hosted_public['crossYearNotes']
+ hydrate_notes="""\n(()=>{const p=window.STUDY_PUBLIC,cards=new Map(p.strategyCards.map(c=>[c.id,c]));p.crossYearNotes=p.crossYearNoteSources.map(([id,i,years])=>{const c=cards.get(id),execution=c.worked.split(/\\n\\s*\\n/)[i],prefix=execution.split('：',1)[0];return {id:`note-${id}-${i}`,kind:'note',category:c.category,year:years[0],years,title:[...prefix].length<85?prefix:`${years[0]}年 · ${c.title}`,execution,methods:[{id:c.id,version:c.version}],status:'已整理示范；此类别全量检验未完成'};});delete p.crossYearNoteSources;})();\n"""
+ (local/'public-data.js').write_text('window.STUDY_PUBLIC='+json_script(hosted_public)+';'+hydrate_notes)
  for name,source_paper in papers.items():
   target=local/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,target)
   portable=OUT/name;portable.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,portable)

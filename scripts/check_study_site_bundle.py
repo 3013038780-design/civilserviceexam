@@ -96,7 +96,9 @@ for x in examples:
 public=(p/'public-data.js').read_text();assert 'crossYearExamples' not in public and 'cross-year-papers/' not in public
 assert '看它怎样用于2026真题' not in (p/'app.js').read_text()
 print(json.dumps({'cross_year_records':len(examples),'disputes_preserved':sum(x['status']=='存在争议' for x in examples),'years':sorted({x['year'] for x in examples}),'original_pdfs':len({x['paper'] for x in examples}),'private_public_boundary':True},ensure_ascii=False))
-notes=json.loads(public.split('=',1)[1].rstrip(';\n'))['crossYearNotes']
+import subprocess
+hydrated_public=json.loads(subprocess.check_output(['node','-e',"global.window={};require(process.argv[1]);process.stdout.write(JSON.stringify(window.STUDY_PUBLIC))",str((p/'public-data.js').resolve())],text=True))
+notes=hydrated_public['crossYearNotes']
 url_year_case=next(x for x in notes if x['title'].startswith('2003B85'))
 assert url_year_case['year']==2003 and 2016 not in url_year_case['years']
 assert all(any(x['category']==category for x in notes) for category in ['cloze','structure','reading','logic','analogy'])
@@ -140,9 +142,13 @@ assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*102
 assert not (p/'content').exists() and not (dest/'content').exists()
 for runtime_file in ['index.html','app.js','app.css']:
  assert 'content/' not in (p/runtime_file).read_text()
-seed_public=json.loads((p/'public-data.js').read_text().split('=',1)[1].rstrip(';\n'))
+hosted_public_text=(p/'public-data.js').read_text()
+seed_public=json.loads(hosted_public_text.split('=',1)[1].split(';\n',1)[0])
 assert seed_public['strategyCards']==json.loads(Path('web/content/xingce-branches.json').read_text())
 assert seed_public['methods']==json.loads(Path('web/content/xingce-methods.json').read_text())
+# Execute the shipped hydration and compare the entire object, including all notes.
+expected_public=json.loads(Path('web/public-data.js').read_text().split('=',1)[1].rstrip(';\n'))
+assert hydrated_public==expected_public, 'Hosted teaching/index hydration changed content'
 
 # Navigation must use actual target categories, including data's cross-category calls.
 methods=json.loads(Path('web/content/xingce-methods.json').read_text())
