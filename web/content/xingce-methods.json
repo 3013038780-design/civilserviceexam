@@ -317,7 +317,34 @@
       "use": "借用必要条件核对；不添加题内没有的限制。"
     },
     "paused": false,
-    "status": "通用流程第一版；题内示范已核验，整类迁移效果待验证"
+    "status": "通用流程第一版；题内示范已核验，整类迁移效果待验证",
+    "taskMap": [
+      {
+        "signal": "概念与生活案例匹配",
+        "branch": "definition-conditions",
+        "label": "条件匹配"
+      },
+      {
+        "signal": "多个概念／包含／方向比较",
+        "branch": "definition-relations",
+        "label": "关系比较"
+      },
+      {
+        "signal": "自定符号、公式或算法",
+        "branch": "given-rules",
+        "label": "照规则执行"
+      },
+      {
+        "signal": "步骤、流程、树或状态变化",
+        "branch": "procedure",
+        "label": "检查第一步违规"
+      },
+      {
+        "signal": "文字描述对应器物图片",
+        "branch": "visual-description",
+        "label": "部位逐项核对"
+      }
+    ]
   },
   {
     "id": "analogy",

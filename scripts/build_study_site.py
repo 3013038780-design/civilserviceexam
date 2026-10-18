@@ -122,6 +122,8 @@ def main():
     evidence_pages[key]={'label':f'{edition} · PDF第{page}页','image':image_url(im)}
   evidence_cases[case]=ids
  b['strategyEvidence']={'pages':evidence_pages,'cases':evidence_cases}
+ practice_file=ROOT/'本地资料/真题策略研究/定义样板_试用入口.json'
+ if practice_file.exists():b['strategyPractice']=json.loads(practice_file.read_text())
  OUT.mkdir(parents=True,exist_ok=True)
  (OUT/'公考学习资料包.json').write_text(json_script(b))
  html=(WEB/'index.html').read_text().replace('<link rel="stylesheet" href="app.css">','<style>'+(WEB/'app.css').read_text()+'</style>')
