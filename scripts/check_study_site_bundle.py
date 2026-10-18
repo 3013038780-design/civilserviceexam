@@ -62,3 +62,5 @@ for name in original_images:
  with Image.open(p/name) as im:assert im.format=='JPEG' and max(im.size)==2000
 assert 'cross-year-pages/' not in public
 print(json.dumps({'lazy_original_images':len(original_images),'every_review_has_original_pages':True},ensure_ascii=False))
+
+assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*1024, "Expanded static assets leave too little archive headroom"

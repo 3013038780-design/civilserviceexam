@@ -128,10 +128,14 @@ def main():
   key=Path(x['paper']).stem
   x['pageImages']=[{'page':page,'image':f'cross-year-pages/{key}-{page}.jpg'} for page in x['pages']]
   for page in x['pageImages']:page_jobs[page['image']]=(papers[x['paper']],page['page'])
+ profile={"height":2000,"jpeg_quality":78,"renderer":"pdftoppm-q78"}
+ profile_file=OUT/"cross-year-render-profile.json"
+ rerender=not profile_file.exists() or json.loads(profile_file.read_text())!=profile
  def render_original(item):
   name,(pdf_path,page)=item;target=OUT/name;target.parent.mkdir(parents=True,exist_ok=True)
-  if not target.exists():subprocess.run(['pdftoppm','-f',str(page),'-l',str(page),'-scale-to','2000','-singlefile','-jpeg','-jpegopt','quality=82',str(pdf_path),str(target.with_suffix(''))],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+  if rerender or not target.exists():subprocess.run(['pdftoppm','-f',str(page),'-l',str(page),'-scale-to','2000','-singlefile','-jpeg','-jpegopt',f'quality={profile["jpeg_quality"]}',str(pdf_path),str(target.with_suffix(''))],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
  with ThreadPoolExecutor(max_workers=4) as workers:list(workers.map(render_original,page_jobs.items()))
+ profile_file.write_text(json.dumps(profile))
  # Additional original pages belong only to the private bundle, never public-data.js.
  evidence_root=ROOT/'本地资料/真题策略研究/视觉阅读'
  case_specs={
