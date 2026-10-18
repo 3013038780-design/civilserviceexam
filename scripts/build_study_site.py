@@ -2,7 +2,7 @@
 Run with the bundled Python (Pillow, pdfplumber, pypdf). Private files stay ignored.
 """
 from pathlib import Path
-import argparse,base64,hashlib,io,json,logging,re,shutil,subprocess
+import argparse,base64,copy,hashlib,io,json,logging,re,shutil,subprocess
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 import pdfplumber
@@ -205,6 +205,21 @@ def main():
  # Keep hosted files below the static host's per-file limit as evidence grows.
  # The portable single-file edition above retains the complete bundle.
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
+ hosted_bundle=copy.deepcopy(hosted_bundle)
+ # Exact existing bytes, loaded on demand; portable/import bundles stay embedded.
+ practice_images=local/'practice-images';practice_images.mkdir(exist_ok=True)
+ used_practice_images=set()
+ for group in hosted_bundle.get('strategyPractice',{}).values():
+  for q in group.get('questions',[]):
+   if not q.get('image'):continue
+   match=re.fullmatch(r'data:image/(jpeg|png|webp);base64,([A-Za-z0-9+/=]+)',q['image']);assert match
+   raw=base64.b64decode(match[2]);ext={'jpeg':'jpg','png':'png','webp':'webp'}[match[1]]
+   name=hashlib.sha256(raw).hexdigest()[:24]+'.'+ext
+   (practice_images/name).write_bytes(raw);used_practice_images.add(name)
+   q['image']='practice-images/'+name
+ for stale in practice_images.iterdir():
+  if stale.name not in used_practice_images:stale.unlink()
+
  # Split by complete page records; never split image data or omit a referenced page.
  # Scripts execute in order before app.js, preserving the existing reader contract.
  for stale in local.glob('strategy-evidence*.js'):stale.unlink()

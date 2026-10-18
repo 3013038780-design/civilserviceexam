@@ -43,7 +43,7 @@ for c in cards:
  ids={x['id'] for x in t['flow']};assert len(ids)==len(t['flow'])
  for node in t['flow']:
   assert node['question'] and node['choices']
-  for edge in node['choices']:assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争']
+  for edge in node['choices']:assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支（教学待补）']
  for ex in [t['success'],t['failure']]:
   assert all(s['node'] in ids and s['text'] for s in ex['steps'])
 audit_by={x['source_id']:x for x in inventory}
@@ -124,7 +124,13 @@ if data_practice_path.exists():
     assert proof['kind']==answer['kind']=='self-authored'
     assert proof['answer']==answer['answer'] and proof['questionText']==q['questionText'] and proof['execution']==answer['execution']
     assert answer['proof_id']==q['source_id'] and q['source_id'] not in audit_by
-    if proof.get('proof_type')=='annual-unequal':
+    if proof.get('proof_type')=='part-direction':
+     g={k:Fraction(v) for k,v in proof['givens'].items()}
+     assert g['T1']*g['s1']-g['T0']*g['s0']==Fraction(proof['delta'])==25 and proof['answer']=='C'
+    elif proof.get('proof_type')=='part-inverse':
+     g={k:Fraction(v) for k,v in proof['givens'].items()}
+     assert g['part_ratio']*g['s0']/g['s1']-1==Fraction(proof['growth'])==Fraction(4,5) and proof['answer']=='B'
+    elif proof.get('proof_type')=='annual-unequal':
      a,b=proof['givens'];t=1+Fraction(proof['threshold'])
      assert Fraction(a['ratio'])<t**a['n'] and Fraction(b['ratio'])>t**b['n'] and proof['answer']=='B'
     elif proof.get('proof_type')=='annual-mean':

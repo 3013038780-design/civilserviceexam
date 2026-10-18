@@ -1,5 +1,5 @@
 """Verify private build provenance and immutable first answers; copy validated output to the private checkout."""
-import json,re,shutil
+import hashlib,json,re,shutil
 from pathlib import Path
 r=Path('本地作答/学习网站');p=r/'preview';b=json.loads((r/'公考学习资料包.json').read_text());old=Path('本地资料/网站发布/dist/index.html').read_text();ob=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',old,re.S)[1]);assert len(b['xingce'])==len(ob['xingce'])==135
 changes=[]
@@ -27,6 +27,22 @@ for key,page in pages.items():
  assert page['label']==original['label'] and re.fullmatch(r'strategy-pages/[a-f0-9]{24}\.jpg',page['image'])
  assert (p/page['image']).read_bytes()==base64.b64decode(original['image'].split(',',1)[1])
 assert all(k in pages for v in cases.values() for k in v)
+
+# Hosted practice assets must preserve every original field and image byte.
+hosted=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',(p/'index.html').read_text(),re.S)[1])
+import copy
+restored=copy.deepcopy(hosted.get('strategyPractice',{}));hosted_practice_assets=set()
+for key,group in restored.items():
+ original_group=b['strategyPractice'][key]
+ for q,original in zip(group['questions'],original_group['questions']):
+  if not original.get('image'):continue
+  name=q['image'];assert re.fullmatch(r'practice-images/[a-f0-9]{24}\.(jpg|png|webp)',name)
+  raw=base64.b64decode(original['image'].split(',',1)[1]);assert (p/name).read_bytes()==raw
+  assert Path(name).stem==hashlib.sha256(raw).hexdigest()[:24]
+  q['image']=original['image'];hosted_practice_assets.add(name)
+assert restored==b.get('strategyPractice',{})
+assert hosted.get('strategyPracticeReview')==b.get('strategyPracticeReview')
+print(json.dumps({'external_practice_images':len(hosted_practice_assets),'original_bytes_preserved':True}))
 branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert branches and len(branches)==len({x['id'] for x in branches})
 assert all(f.stat().st_size<25*1024*1024 for f in p.rglob('*') if f.is_file())
 dest=Path('本地资料/网站发布/dist')
