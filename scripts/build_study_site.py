@@ -54,7 +54,8 @@ def cross_year_records():
  root=ROOT/'本地资料/真题策略研究';inventory=json.loads((root/'逐题策略检验清单.json').read_text())['items'];catalog={x['id']:x for x in json.loads((root/'主版本阅读目录.json').read_text())};records=[];cache={};papers={}
  for x in inventory:
   if x['status'] not in ['已有策略检验','存在争议']:continue
-  if x['category'] not in ['定义判断','资料分析']:continue
+  category={'定义判断':'definition','资料分析':'data','中心句与排序':'structure'}.get(x['category'])
+  if category is None:continue
   unit=catalog[x['unit_id']];source=Path(unit['path']);paper_key=hashlib.sha256(source.read_bytes()).hexdigest()[:16];paper='cross-year-papers/'+paper_key+'.pdf';papers[paper]=source
   review={}
   for link in x.get('evidence_links',[]):
@@ -68,7 +69,7 @@ def cross_year_records():
   pages=sorted(set(review.get('visual_pages',[])+review.get('text_pages',[]))) or x.get('pages',[]) or x.get('located_pages',[])
   pages=[n for n in pages if isinstance(n,int) and n>0]
   kind=unit['kind'];variant=unit['variant'];edition=str(unit['year'])+(('主卷' if variant=='主卷' else variant) if kind=='旧卷别或卷别待确认' else kind+('' if variant=='主卷' else variant))
-  records.append({'id':'review-'+hashlib.sha256(x['source_id'].encode()).hexdigest()[:14],'kind':'review','category':'definition' if x['category']=='定义判断' else 'data','year':x['year'],'years':[x['year']],'title':f'{edition} · 第{x["question"]}题','task':x['actual_task'],'status':x['status'],'execution':x['decisive_basis'],'result':x['result'],'issues':x.get('issues',[]),'methods':x.get('method',[]),'first':(x.get('first_answer') or {}).get('answer'),'exposure':x.get('reference_exposure','接触范围见原记录'),'paper':paper,'pages':pages,'reference':review.get('reference'),'source_id':x['source_id']})
+  records.append({'id':'review-'+hashlib.sha256(x['source_id'].encode()).hexdigest()[:14],'kind':'review','category':category,'year':x['year'],'years':[x['year']],'title':f'{edition} · 第{x["question"]}题','task':x['actual_task'],'status':x['status'],'execution':x['decisive_basis'],'result':x['result'],'issues':x.get('issues',[]),'methods':x.get('method',[]),'first':(x.get('first_answer') or {}).get('answer'),'exposure':x.get('reference_exposure','接触范围见原记录'),'paper':paper,'pages':pages,'reference':review.get('reference'),'source_id':x['source_id']})
  return records,papers
 
 def main():
@@ -126,7 +127,11 @@ def main():
  page_jobs={}
  for x in records:
   key=Path(x['paper']).stem
-  x['pageImages']=[{'page':page,'image':f'cross-year-pages/{key}-{page}.jpg'} for page in x['pages']]
+  # Text-focused structure lessons reuse the exact retained PDF at its page.
+  # Existing image-based lessons remain byte-identical; do not rasterize a
+  # second copy of every text page merely to show the same source twice.
+  x['originalMode']='pdf' if x['category']=='structure' else 'images'
+  x['pageImages']=[] if x['originalMode']=='pdf' else [{'page':page,'image':f'cross-year-pages/{key}-{page}.jpg'} for page in x['pages']]
   for page in x['pageImages']:page_jobs[page['image']]=(papers[x['paper']],page['page'])
  profile={"height":2000,"jpeg_quality":78,"renderer":"pdftoppm-q78"}
  profile_file=OUT/"cross-year-render-profile.json"
@@ -191,6 +196,14 @@ def main():
   review=json.loads((ROOT/'本地资料/真题策略研究/资料分支_试用核验.json').read_text())
   assert not set(review)&set(b.get('strategyPracticeReview',{}))
   b.setdefault('strategyPracticeReview',{}).update(review)
+ structure_practice_file=ROOT/'本地资料/真题策略研究/中心排序分支_试用入口.json'
+ if structure_practice_file.exists():
+  practice=json.loads(structure_practice_file.read_text())
+  review=json.loads((ROOT/'本地资料/真题策略研究/中心排序分支_试用核验.json').read_text())
+  assert not set(practice)&set(b.get('strategyPractice',{}))
+  assert not set(review)&set(b.get('strategyPracticeReview',{}))
+  b.setdefault('strategyPractice',{}).update(practice)
+  b.setdefault('strategyPracticeReview',{}).update(review)
  OUT.mkdir(parents=True,exist_ok=True)
  (OUT/'公考学习资料包.json').write_text(json_script(b))
  html=(WEB/'index.html').read_text().replace('<link rel="stylesheet" href="app.css">','<style>'+(WEB/'app.css').read_text()+'</style>')
@@ -206,7 +219,10 @@ def main():
  for name,source_paper in papers.items():
   target=local/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,target)
   portable=OUT/name;portable.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,portable)
- shutil.copytree(OUT/'cross-year-pages',local/'cross-year-pages',dirs_exist_ok=True)
+ (local/'cross-year-pages').mkdir(exist_ok=True)
+ for name in page_jobs:shutil.copy2(OUT/name,local/name)
+ for file in (local/'cross-year-pages').iterdir():
+  if 'cross-year-pages/'+file.name not in page_jobs:file.unlink()
  # Keep hosted files below the static host's per-file limit as evidence grows.
  # The portable single-file edition above retains the complete bundle.
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}

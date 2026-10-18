@@ -72,7 +72,7 @@ dest=Path('本地资料/网站发布/dist')
 for f in dest.glob('strategy-evidence-*.js'):
  if not (p/f.name).exists():f.unlink()
 shutil.copytree(p,dest,dirs_exist_ok=True)
-for dirname in ['paper-images','practice-images','strategy-pages']:
+for dirname in ['paper-images','practice-images','strategy-pages','cross-year-pages']:
  if (dest/dirname).exists():
   for file in (dest/dirname).iterdir():
    if file.is_file() and not (p/dirname/file.name).exists():file.unlink()
@@ -81,7 +81,7 @@ print(json.dumps({'cards':len(branches),'pages':len(pages),'chunks':len(list(p.g
 # Cross-year review records must match the actual inventory, including disputes.
 import hashlib
 inventory=json.loads(Path('本地资料/真题策略研究/逐题策略检验清单.json').read_text())['items']
-expected={x['source_id']:x for x in inventory if x['status'] in ['已有策略检验','存在争议'] and x['category'] in ['定义判断','资料分析']}
+expected={x['source_id']:x for x in inventory if x['status'] in ['已有策略检验','存在争议'] and x['category'] in ['定义判断','资料分析','中心句与排序']}
 examples=b['crossYearExamples'];assert len(examples)==len({x['id'] for x in examples})==len(expected)
 assert {x['source_id'] for x in examples}==expected.keys()
 catalog={x['id']:x for x in json.loads(Path('本地资料/真题策略研究/主版本阅读目录.json').read_text())}
@@ -102,6 +102,10 @@ assert all(any(x['category']==category for x in notes) for category in ['cloze',
 
 original_images=set()
 for x in examples:
+ if x.get('originalMode')=='pdf':
+  assert x['category']=='structure' and x['pages'] and x['pageImages']==[]
+  assert (p/x['paper']).is_file() and (dest/x['paper']).is_file()
+  continue
  assert [v['page'] for v in x['pageImages']]==x['pages'] and x['pageImages']
  for image in x['pageImages']:
   assert image['image']==f"cross-year-pages/{Path(x['paper']).stem}-{image['page']}.jpg"
@@ -119,13 +123,17 @@ if 'strategyPracticeReview' in b:
  expected_practice=json.loads(Path('本地资料/真题策略研究/资料分支_试用入口.json').read_text())
  definition_practice=json.loads(Path('本地资料/真题策略研究/定义样板_试用入口.json').read_text())
  assert not set(expected_practice)&set(definition_practice)
- assert guided=={**expected_practice,**definition_practice}
+ structure_practice=json.loads(Path('本地资料/真题策略研究/中心排序分支_试用入口.json').read_text())
+ assert not set(structure_practice)&(set(expected_practice)|set(definition_practice))
+ assert guided=={**expected_practice,**definition_practice,**structure_practice}
  expected_review=json.loads(Path('本地资料/真题策略研究/资料分支_试用核验.json').read_text())
  definition_review=json.loads(Path('本地资料/真题策略研究/定义分支_试用核验.json').read_text())
  assert not set(expected_review)&set(definition_review)
- assert b['strategyPracticeReview']=={**expected_review,**definition_review}
+ structure_review=json.loads(Path('本地资料/真题策略研究/中心排序分支_试用核验.json').read_text())
+ assert not set(structure_review)&(set(expected_review)|set(definition_review))
+ assert b['strategyPracticeReview']=={**expected_review,**definition_review,**structure_review}
  assert all('answer' not in q and 'execution' not in q for group in guided.values() for q in group['questions'])
-print(json.dumps({'lazy_original_images':len(original_images),'every_review_has_original_pages':True},ensure_ascii=False))
+print(json.dumps({'lazy_original_images':len(original_images),'original_pdf_lessons':sum(x.get('originalMode')=='pdf' for x in examples),'every_review_has_original_pages':True},ensure_ascii=False))
 
 assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*1024, "Expanded static assets leave too little archive headroom"
 
@@ -153,8 +161,20 @@ for card in cards:
   if not example.get('source_id'):continue
   source=by_source[example['source_id']]
   assert card['id'] in {m['id'] for m in source['methods']}
-  assert source['paper'] and source['pageImages']
+  assert source['paper'] and (source['pageImages'] or source.get('originalMode')=='pdf' and source['pages'])
   assert role!='success' or source['status']=='已有策略检验'
   linked.append(example['source_id'])
-assert len(linked)==len(set(linked))==29
-print('teaching example provenance: 29 exact original-question links; disputes excluded from success examples')
+assert len(linked)==len(set(linked))==31
+print('teaching example provenance: 31 exact original-question links; disputes excluded from success examples')
+
+# The browser renderer and its worker/data ship from the same pinned package.
+# No CDN fetch is required for reading private original PDFs.
+vendor=Path('web/vendor/pdfjs')
+provenance=json.loads((vendor/'provenance.json').read_text())
+assert provenance['package']=='pdfjs-dist' and provenance['version']=='6.4.299'
+assert (vendor/'LICENSE').is_file()
+for name,digest in provenance['files'].items():
+ for folder in [vendor,p/'vendor/pdfjs',dest/'vendor/pdfjs']:
+  assert hashlib.sha256((folder/name).read_bytes()).hexdigest()==digest,name
+assert len(provenance['files'])==len([f for f in vendor.rglob('*') if f.is_file()])-1
+print('pinned PDF renderer: source, preview and private deployment bytes match; license retained')

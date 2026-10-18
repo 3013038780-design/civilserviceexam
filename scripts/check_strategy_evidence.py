@@ -51,7 +51,9 @@ for c in cards:
  for node in t['flow']:
   assert node['question'] and node['choices']
   for edge in node['choices']:
-   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支']
+   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支','转对应任务']
+   if edge['to']=='转对应任务':
+    assert c['id']=='main-claim' and {'sentence-role','ordering-links','reading-evidence'}<=set(t.get('related_methods',[]))
    if edge['to']=='转趋势图或构成图分支':
     assert {'trend-chart','composition-chart'}<=set(t.get('related_methods',[]))
     assert all(by[id]['category']==c['category'] for id in ['trend-chart','composition-chart'])
@@ -142,6 +144,12 @@ if data_practice_path.exists():
  assert not set(practice_review)&set(definition_review)
  practice_review={**practice_review,**definition_review}
  crops.update({x['source_id']:x for x in read(R/'定义分支_试用裁片来源.json')['cases']})
+ structure_path=R/'中心排序分支_试用入口.json'
+ if structure_path.exists():
+  structure_practice=read(structure_path);structure_review=read(R/'中心排序分支_试用核验.json')
+  assert not set(structure_practice)&set(data_practice) and not set(structure_review)&set(practice_review)
+  data_practice.update(structure_practice);practice_review.update(structure_review)
+  crops.update({x['source_id']:x for x in read(R/'中心排序分支_试用裁片来源.json')['cases']})
  legacy=read(R/'定义试用_旧六题保护.json')
  assert len(legacy)==6
  assert set(legacy)<={q['source_id'] for g in practice.values() for q in g['questions']}
@@ -220,8 +228,8 @@ print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_defini
 candidate_path=R/'主旨新版候选_回查清单.json'
 if candidate_path.exists():
  candidate=read(candidate_path)
- if not candidate['adopted']:
-  assert by['main-claim']['version']==candidate['current_version']
+ if candidate:
+  assert by['main-claim']['version']==candidate['candidate_version' if candidate['adopted'] else 'current_version']
   draft=read(R/candidate['candidate_file'])
   version=hashlib.sha256(json.dumps({k:draft[k] for k in ['signal','steps','stop','boundary']},sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:12]
   assert draft['version']==candidate['candidate_version']==version
@@ -251,4 +259,14 @@ if candidate_path.exists():
     for token in pointer:value=value[int(token)] if isinstance(value,list) else value[token]
     answer=value['answer'] if isinstance(value,dict) else value
    assert answer==first['answer'],case['source_id']
-  print(json.dumps({'main_claim_candidate':version,'adopted':False,'rechecked_candidates':len(complete),'pending_candidates':len(pending),'routed_other_tasks':len(routed),'current_rule_unchanged':True},ensure_ascii=False))
+  if candidate['adopted']:
+   adopted=read(R/candidate['adopted_evidence'])['cases']
+   assert {c['source_id'] for c in adopted}==complete
+   original={c['source_id']:c for c in candidate_cases}
+   for c in adopted:
+    prior=original[c['source_id']]
+    assert c['methods']==[prior['candidate_method']]
+    for field in ['actual_task','first_answer','reference','working_answer','letter_match','execution']:assert c[field]==prior[field],(c['source_id'],field)
+    assert c['inventory_status']==('已有策略检验' if prior['assessment']=='候选新版可执行' else '存在争议')
+    assert audit_by[c['source_id']]['status']==c['inventory_status']
+  print(json.dumps({'main_claim_candidate':version,'adopted':candidate['adopted'],'rechecked_candidates':len(complete),'pending_candidates':len(pending),'routed_other_tasks':len(routed),'current_rule_matches_adoption_state':True},ensure_ascii=False))

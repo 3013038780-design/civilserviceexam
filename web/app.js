@@ -22,7 +22,7 @@
     if(o.shenlun.some((q,i)=>q.题号!==i+1||typeof q.首答!=='string'))throw Error('申论资料字段无效。');
     if(!o.paper || !Array.isArray(o.paper.pages)||o.paper.pages.length!==26 ||o.paper.pages.some(s=>!validImage(s)))throw Error('原题页图缺失或格式不受支持。');
     if(!o.paper.map || o.xingce.some(q=>!Number.isInteger(o.paper.map[q.题号]?.page)||o.paper.map[q.题号].page<1||o.paper.map[q.题号].page>26))throw Error('原题页码无效。');
-    if(o.crossYearExamples&&(!Array.isArray(o.crossYearExamples)||o.crossYearExamples.some(x=>!x||typeof x.id!=='string'||typeof x.title!=='string'||typeof x.execution!=='string'||!Array.isArray(x.methods)||!Array.isArray(x.years)||!['data','definition'].includes(x.category)||!['已有策略检验','存在争议'].includes(x.status))))throw Error('跨年题例字段不完整。');
+    if(o.crossYearExamples&&(!Array.isArray(o.crossYearExamples)||o.crossYearExamples.some(x=>!x||typeof x.id!=='string'||typeof x.title!=='string'||typeof x.execution!=='string'||!Array.isArray(x.methods)||!Array.isArray(x.years)||!['data','definition','structure'].includes(x.category)||!['已有策略检验','存在争议'].includes(x.status))))throw Error('跨年题例字段不完整。');
     if(o.strategyPractice)for(const p of Object.values(o.strategyPractice)){
       if(p?.mode!=='guided-transfer/v1')continue;
       if(!Array.isArray(p.questions)||p.questions.length<3||p.questions.length>5||p.questions.some(q=>!q||typeof q.source_id!=='string'||typeof q.label!=='string'||typeof q.hint!=='string'||!(practiceImage(q.image)||(typeof q.questionText==='string'&&q.questionText.length>0&&q.questionText.length<10000))))throw Error('试用题字段或原图格式无效。');
@@ -112,19 +112,25 @@
   }
     function examplesFor(category){
     const reviewed=(bundle?.crossYearExamples||[]).filter(x=>x.category===category);
-    return reviewed.length?reviewed:(PUBLIC.crossYearNotes||[]).filter(x=>x.category===category);
+    const covered=new Set(reviewed.flatMap(x=>(x.methods||[]).map(m=>m.id)));
+    const notes=(PUBLIC.crossYearNotes||[]).filter(x=>x.category===category&&!(x.methods||[]).every(m=>covered.has(m.id)));
+    return [...reviewed,...notes];
+  }
+  function exampleCountLabel(items){
+    const reviewed=items.filter(x=>x.kind==='review').length,notes=items.length-reviewed;
+    return [reviewed?`${reviewed}个逐题来源位置`:'',notes?`${notes}段待专项检验讲解`:''].filter(Boolean).join('＋');
   }
   function categoryCoverage(c){
     if(c.paused)return '暂缓专项';
     const a=examplesFor(c.id);if(!a.length)return '仅2026同卷示范 · 跨年待整理';
-    return a[0].kind==='review'?`${a.length}个来源位置 · 已逐题处理`:`${a.length}段跨年讲解 · 全量待检验`;
+    return exampleCountLabel(a);
   }
   function branchExamples(c){
     const a=(PUBLIC.methods||[]).flatMap(category=>examplesFor(category.id)).filter(x=>(x.methods||[]).some(m=>m.id===c.id));
     if(!a.length)return '';
     const years=[...new Set(a.flatMap(x=>x.years||[x.year]))].filter(Number.isFinite).sort((a,b)=>a-b),ordered=mixedYears(a);
     const card=x=>`<a class="cross-year-card" href="#/example/${esc(x.id)}"><strong>${esc(x.title)}</strong><span>${esc(x.status)} · 看原题与依据 →</span></a>`;
-    return `<section class="branch-cross-year" aria-label="这条方法的跨年题例"><h4>这条方法怎样用在其他年份？</h4><p class="subtle">${a.length}${a[0].kind==='review'?'个来源位置':'段讲解'} · ${years[0]}—${years[years.length-1]}年。先对照下面的不同年份；同题跨卷及争议均保留。</p><div class="cross-year-grid">${ordered.slice(0,3).map(card).join('')}</div>${ordered.length>3?`<details class="branch-example-more"><summary>查看其余${ordered.length-3}条题例（${years.join('、')}年）</summary><div class="cross-year-grid">${ordered.slice(3).map(card).join('')}</div></details>`:''}</section>`;
+    return `<section class="branch-cross-year" aria-label="这条方法的跨年题例"><h4>这条方法怎样用在其他年份？</h4><p class="subtle">${exampleCountLabel(a)} · ${years[0]}—${years[years.length-1]}年。先对照下面的不同年份；同题跨卷及争议均保留。</p><div class="cross-year-grid">${ordered.slice(0,3).map(card).join('')}</div>${ordered.length>3?`<details class="branch-example-more"><summary>查看其余${ordered.length-3}条题例（${years.join('、')}年）</summary><div class="cross-year-grid">${ordered.slice(3).map(card).join('')}</div></details>`:''}</section>`;
   }
   function taskMap(c){
     if(!c.taskMap)return '';
@@ -133,7 +139,7 @@
   function crossYearEntry(c){
     const a=examplesFor(c.id);if(!a.length)return '';
     const years=[...new Set(a.flatMap(x=>x.years||[x.year]))].filter(Number.isFinite).sort((a,b)=>a-b);
-    return `<aside class="cross-year-entry"><strong>本类不只2026：${years[0]}—${years[years.length-1]}年</strong><p>${a.length}${a[0].kind==='review'?'个来源位置，含争议':'段已有讲解，尚非全量检验'}。每张方法卡下直接列出跨年题例，也可按年份查整类题例库。</p><button class="soft" data-example-library>按年份找本类题例 ↓</button></aside>`;
+    return `<aside class="cross-year-entry"><strong>本类不只2026：${years[0]}—${years[years.length-1]}年</strong><p>${exampleCountLabel(a)}，不代表整类全量完成。每张方法卡下直接列出跨年题例，也可按年份查整类题例库。</p><button class="soft" data-example-library>按年份找本类题例 ↓</button></aside>`;
   }
   function mixedYears(items){
     const groups=new Map();for(const x of items){if(!groups.has(x.year))groups.set(x.year,[]);groups.get(x.year).push(x);}
@@ -150,7 +156,31 @@
     const years=[...new Set(all.flatMap(x=>x.years||[x.year]))].sort((a,b)=>b-a);
     const filtered=all.filter(x=>(state.exampleYear==='all'||(x.years||[x.year]).includes(Number(state.exampleYear)))&&(state.exampleStatus==='all'||x.status===state.exampleStatus));
     const shown=mixedYears(filtered).slice(0,state.exampleLimit),reviewed=all[0].kind==='review';
-    return `<section class="cross-year-library" id="cross-year-library" aria-label="跨年题例库"><h3>跨年题例 · ${all.length}${reviewed?'个来源位置':'段已整理示范'}</h3><p>${reviewed?'逐题执行依据已接入；包含跨卷同题，争议单列。点击一道题，可看原卷、所用方法和核验说明。':'这些是已有方法卡中的跨年讲解片段；本类尚未完成全量逐题策略检验。'}</p><div class="example-filters"><label>年份<select id="example-year" aria-label="年份"><option value="all">全部年份</option>${years.map(y=>`<option value="${y}" ${state.exampleYear==y?'selected':''}>${y}年</option>`).join('')}</select></label>${reviewed?`<label>核验状态<select id="example-status" aria-label="核验状态"><option value="all">全部状态</option>${['已有策略检验','存在争议'].map(s=>`<option ${state.exampleStatus===s?'selected':''}>${s}</option>`).join('')}</select></label>`:''}<span class="subtle">显示${shown.length} / ${filtered.length}</span></div><div class="cross-year-grid">${shown.map(x=>`<a class="cross-year-card" href="#/example/${esc(x.id)}"><span class="example-status ${x.status==='存在争议'?'disputed':''}">${esc(x.status)}</span><strong>${esc(x.title)}</strong><span>${esc(x.task||((PUBLIC.strategyCards||[]).find(m=>m.id===x.methods[0]?.id)?.title)||'分类方法示范')}</span><span class="example-enter">看原题与解法 →</span></a>`).join('')}</div>${shown.length<filtered.length?'<button class="soft" data-more-examples>再显示12条</button>':''}${!shown.length?'<p>这个筛选条件下没有已整理记录。</p>':''}<p class="subtle">选不同年份比较同一动作。题例数量不等于独立新题次数，也不代表你已掌握。</p></section>`;
+    return `<section class="cross-year-library" id="cross-year-library" aria-label="跨年题例库"><h3>跨年题例 · ${exampleCountLabel(all)}</h3><p>${reviewed?'逐题来源与旧讲解分别标记，包含跨卷同题和争议。旧讲解不代表已完成当前版本专项检验；点击一道题查看对应依据。':'这些是已有方法卡中的跨年讲解片段；本类尚未完成全量逐题策略检验。'}</p><div class="example-filters"><label>年份<select id="example-year" aria-label="年份"><option value="all">全部年份</option>${years.map(y=>`<option value="${y}" ${state.exampleYear==y?'selected':''}>${y}年</option>`).join('')}</select></label>${reviewed?`<label>核验状态<select id="example-status" aria-label="核验状态"><option value="all">全部状态</option>${['已有策略检验','存在争议'].map(s=>`<option ${state.exampleStatus===s?'selected':''}>${s}</option>`).join('')}</select></label>`:''}<span class="subtle">显示${shown.length} / ${filtered.length}</span></div><div class="cross-year-grid">${shown.map(x=>`<a class="cross-year-card" href="#/example/${esc(x.id)}"><span class="example-status ${x.status==='存在争议'?'disputed':''}">${esc(x.status)}</span><strong>${esc(x.title)}</strong><span>${esc(x.task||((PUBLIC.strategyCards||[]).find(m=>m.id===x.methods[0]?.id)?.title)||'分类方法示范')}</span><span class="example-enter">看原题与解法 →</span></a>`).join('')}</div>${shown.length<filtered.length?'<button class="soft" data-more-examples>再显示12条</button>':''}${!shown.length?'<p>这个筛选条件下没有已整理记录。</p>':''}<p class="subtle">选不同年份比较同一动作。题例数量不等于独立新题次数，也不代表你已掌握。</p></section>`;
+  }
+  let pdfLibrary;
+  async function renderPdfOriginals(container,paper,pages,title){
+    let documentTask;
+    try{
+      pdfLibrary ||= import('./vendor/pdfjs/pdf.min.mjs');
+      const library=await pdfLibrary;
+      library.GlobalWorkerOptions.workerSrc=new URL('vendor/pdfjs/pdf.worker.min.mjs',location.href).href;
+      documentTask=library.getDocument({url:paper,cMapUrl:'vendor/pdfjs/cmaps/',cMapPacked:true,standardFontDataUrl:'vendor/pdfjs/standard_fonts/',wasmUrl:'vendor/pdfjs/wasm/'});
+      const pdf=await documentTask.promise;
+      for(const number of pages){
+        if(!container.isConnected)break;
+        const page=await pdf.getPage(number),base=page.getViewport({scale:1}),viewport=page.getViewport({scale:2000/Math.max(base.width,base.height)});
+        const canvas=document.createElement('canvas');canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+        await page.render({canvasContext:canvas.getContext('2d'),viewport}).promise;
+        if(!container.isConnected)break;
+        const image=document.createElement('img');image.className='source-thumb';image.alt=title+'所在原卷第'+number+'页';image.src=canvas.toDataURL('image/png');image.dataset.zoom='';image.dataset.zoomTitle=image.alt;
+        const section=document.createElement('details');section.className='cross-original-page';section.open=number===pages[0];
+        const heading=document.createElement('summary');heading.textContent='原卷第'+number+'页 · 点图放大';section.append(heading,image);container.append(section);
+      }
+      if(container.isConnected)container.querySelector('[role="status"]')?.remove();
+    }catch{
+      if(container.isConnected)container.querySelector('[role="status"]').textContent='原页暂未显示，请用下方原卷链接打开；方法与核验仍可阅读。';
+    }finally{if(documentTask)await documentTask.destroy();}
   }
   function renderExample(id){
     const x=[...(bundle?.crossYearExamples||[]),...(PUBLIC.crossYearNotes||[])].find(x=>x.id===id);
@@ -160,12 +190,16 @@
     if(x.kind==='review'&&/^cross-year-papers\/[a-f0-9]{16}\.pdf$/.test(x.paper||'')){
       const pages=(x.pages||[]).filter(n=>Number.isInteger(n)&&n>0);
       original=`<section class="example-original"><h2>先看原题与材料</h2><p>按题号找到本题；原页保留选项、图表与共享材料，点图可放大。</p>${(x.pageImages||[]).filter(p=>/^cross-year-pages\/[a-f0-9]{16}-[0-9]+\.jpg$/.test(p.image)).map(p=>`<details class="cross-original-page" ${p.page===pages[0]?'open':''}><summary>原卷第${p.page}页 · 点图放大</summary><img class="source-thumb" src="${esc(p.image)}" alt="${esc(x.title)}所在原卷第${p.page}页" loading="lazy" data-zoom data-zoom-title="${esc(x.title)} · 原卷第${p.page}页"></details>`).join('')}<p class="subtle">需要整卷上下文时，也可打开PDF：</p><div class="quick-picks">${(pages.length?pages:[null]).map(p=>`<a class="paper-link" href="${esc(x.paper)}${p?'#page='+p:''}" target="_blank" rel="noopener noreferrer">${p?'原卷第'+p+'页':'打开原卷'} ↗</a>`).join('')}</div></section>`;
+      if(x.originalMode==='pdf'&&pages.length){
+        original=`<section class="example-original"><h2>先看原题与材料</h2><p>以下直接读取原PDF并显示对应页，请按题号定位；点图可放大。</p><div class="original-pdf-pages"><p role="status">正在读取原页…</p></div><p>需要完整上下文时，打开对应原卷：</p><div class="quick-picks">${pages.map(p=>`<a class="paper-link" href="${esc(x.paper)}#page=${p}" target="_blank" rel="noopener noreferrer">原卷第${p}页 ↗</a>`).join('')}</div></section>`;
+      }
     }else{
       const evidence=bundle?.strategyEvidence||(bundle?window.STUDY_STRATEGY_EVIDENCE:null),ids=[...new Set(methods.flatMap(m=>evidence?.cases?.[m.id]||[]))],pages=ids.map(k=>evidence?.pages?.[k]).filter(p=>p&&(x.years||[x.year]).some(y=>p.label.startsWith(String(y))));
       if(pages.length)original=`<details><summary>同方法、同年份的已关联原页（按卷别题号核对）</summary>${pages.map(p=>`<p>${esc(p.label)}</p><img class="source-thumb" src="${esc(p.image)}" alt="${esc(p.label)}" loading="lazy" data-zoom data-zoom-title="${esc(p.label)}">`).join('')}</details>`;
       else original='<p class="subtle">此讲解片段的精确原页尚未关联，当前先展示已有讲解与方法入口。</p>';
     }
     $('#main').innerHTML=`<button class="doc-back" data-method="${esc(x.category)}">← 返回${esc(c?.title||'分类方法')}跨年题例</button><article class="panel method-guide cross-year-lesson"><div class="eyebrow">${esc(x.status)}</div><h1>${esc(x.title)}</h1>${x.task?`<p class="method-aim">${esc(x.task)}</p>`:''}${original}<h2>这道题怎样执行方法</h2><div class="example-execution">${inline(x.execution)}</div><h3>对应的分类方法</h3><div class="quick-picks">${methods.map(m=>`<a class="paper-link" href="#/methods/${esc(m.category)}/${esc(m.id)}">${esc(m.title)} →</a>`).join('')}</div>${x.issues?.length?`<details ${x.status==='存在争议'?'open':''}><summary>条件、错误与争议</summary><ul>${x.issues.map(s=>`<li>${esc(s)}</li>`).join('')}</ul></details>`:''}${x.kind==='review'?`<details><summary>查看首答与核验范围</summary><p>原首答：${esc(x.first==null?'来源尚未完整关联，保留缺口':typeof x.first==='string'?x.first:JSON.stringify(x.first))}；机构参考：${esc(typeof x.reference==='string'?x.reference:'见原核验记录')}。</p><p>${esc(x.result)}</p><p>${esc(x.exposure)}</p><p class="subtle">保留首答与接触情况；答案字母一致不等于依据正确，也不等于用户独立掌握。</p></details>`:'<p class="subtle">这是已有讲解片段，不能当作本类别全量检验完成。</p>'}</article>`;
+    if(x.originalMode==='pdf')renderPdfOriginals($('.original-pdf-pages'),x.paper,x.pages,x.title);
     window.scrollTo(0,0);
   }
 
