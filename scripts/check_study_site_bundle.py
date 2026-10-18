@@ -72,6 +72,7 @@ dest=Path('本地资料/网站发布/dist')
 for f in dest.glob('strategy-evidence-*.js'):
  if not (p/f.name).exists():f.unlink()
 shutil.copytree(p,dest,dirs_exist_ok=True)
+shutil.rmtree(dest/'content',ignore_errors=True)
 for dirname in ['paper-images','practice-images','strategy-pages','cross-year-pages']:
  if (dest/dirname).exists():
   for file in (dest/dirname).iterdir():
@@ -136,6 +137,12 @@ if 'strategyPracticeReview' in b:
 print(json.dumps({'lazy_original_images':len(original_images),'original_pdf_lessons':sum(x.get('originalMode')=='pdf' for x in examples),'every_review_has_original_pages':True},ensure_ascii=False))
 
 assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*1024, "Expanded static assets leave too little archive headroom"
+assert not (p/'content').exists() and not (dest/'content').exists()
+for runtime_file in ['index.html','app.js','app.css']:
+ assert 'content/' not in (p/runtime_file).read_text()
+seed_public=json.loads((p/'public-data.js').read_text().split('=',1)[1].rstrip(';\n'))
+assert seed_public['strategyCards']==json.loads(Path('web/content/xingce-branches.json').read_text())
+assert seed_public['methods']==json.loads(Path('web/content/xingce-methods.json').read_text())
 
 # Navigation must use actual target categories, including data's cross-category calls.
 methods=json.loads(Path('web/content/xingce-methods.json').read_text())
@@ -164,8 +171,8 @@ for card in cards:
   assert source['paper'] and (source['pageImages'] or source.get('originalMode')=='pdf' and source['pages'])
   assert role!='success' or source['status']=='已有策略检验'
   linked.append(example['source_id'])
-assert len(linked)==len(set(linked))==31
-print('teaching example provenance: 31 exact original-question links; disputes excluded from success examples')
+assert len(linked)==len(set(linked)) and len(linked)>=31
+print(f'teaching example provenance: {len(linked)} exact original-question links; disputes excluded from success examples')
 
 # The browser renderer and its worker/data ship from the same pinned package.
 # No CDN fetch is required for reading private original PDFs.

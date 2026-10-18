@@ -52,7 +52,9 @@ for c in cards:
  for node in t['flow']:
   assert node['question'] and node['choices']
   for edge in node['choices']:
-   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支','转对应任务']
+   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支','转对应任务','转句子插入分支（待建）']
+   if edge['to']=='转句子插入分支（待建）':
+    assert c['id']=='sentence-role' and '插入' in c['signal']
    if edge['to']=='转对应任务':
     assert c['id']=='main-claim' and {'sentence-role','ordering-links','reading-evidence'}<=set(t.get('related_methods',[]))
    if edge['to']=='转趋势图或构成图分支':
@@ -69,6 +71,25 @@ for c in cards:
    assert ex is not t['success'] or example['status']=='已有策略检验'
   if ex.get('authored'):assert not ex.get('source_id')
 audit_by={x['source_id']:x for x in inventory}
+sentence_adoption=R/'填句规则采用记录.json'
+if sentence_adoption.exists():
+ adoption=read(sentence_adoption)
+ dependencies=read(R/adoption['dependency_manifest'])
+ assert dependencies['pending']==adoption['pending_dependencies']==[]
+ assert len(dependencies['completed'])==adoption['old_cited_positions']
+ assert by['sentence-role']['version']==adoption['to_version']
+ assert dependencies['candidate_version']==adoption['to_version']
+ actual=[x for x in inventory if any(m['id']=='sentence-role' for m in x['method'] or [])]
+ assert len(actual)>=adoption['formal_sources']
+ # A mistaken source number must not become a successful fill-sentence case.
+ misquoted=audit_by['2016-副省级-主卷:40']
+ assert misquoted['category']=='选词填空'
+ assert not any(m['id']=='sentence-role' for m in misquoted['method'] or [])
+ for check in dependencies['completed']:
+  if check['outcome'].startswith('引用纠错'):continue
+  item=audit_by[check['source_id']]
+  assert any(m['id']=='sentence-role' and m['version']==adoption['to_version'] for m in item['method'])
+  assert item['status']==('存在争议' if check['issues'] else '已有策略检验')
 for x in reviews:
  for m in x['methods']:
   if m['version']!=by[m['id']]['version']:assert audit_by[x['source_id']]['status']=='需要回查' or all(by[z['id']]['version']==z['version'] for z in audit_by[x['source_id']]['method'])

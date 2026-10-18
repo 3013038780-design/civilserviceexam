@@ -216,7 +216,10 @@ def main():
  html=html.replace('<script src="app.js"></script>','<script>'+(WEB/'app.js').read_text()+'</script>')
  (OUT/'公考解题研习室.html').write_text(html)
  # An HTTP preview with the same preloaded data, no need to import during QA.
- local=OUT/'preview';shutil.copytree(WEB,local,dirs_exist_ok=True)
+ # Runtime already embeds these editable method seeds in public-data.js.
+ # Keep the originals in web/content, without publishing duplicate copies.
+ local=OUT/'preview';shutil.copytree(WEB,local,dirs_exist_ok=True,ignore=shutil.ignore_patterns('content'))
+ shutil.rmtree(local/'content',ignore_errors=True)
  for name,source_paper in papers.items():
   target=local/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,target)
   portable=OUT/name;portable.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,portable)
