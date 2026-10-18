@@ -128,3 +128,18 @@ if 'strategyPracticeReview' in b:
 print(json.dumps({'lazy_original_images':len(original_images),'every_review_has_original_pages':True},ensure_ascii=False))
 
 assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*1024, "Expanded static assets leave too little archive headroom"
+
+# Navigation must use actual target categories, including data's cross-category calls.
+methods=json.loads(Path('web/content/xingce-methods.json').read_text())
+cards=json.loads(Path('web/content/xingce-branches.json').read_text())
+card_map={c['id']:c for c in cards}
+for category in methods:
+ for item in category.get('taskMap',[]):
+  for target in item.get('targets',[item]):
+   assert target['branch'] in card_map,target
+   assert card_map[target['branch']]['category']==target.get('category',category['id']),target
+data=next(c for c in methods if c['id']=='data')
+targets=[t for item in data['taskMap'] for t in item.get('targets',[item])]
+assert {t['branch'] for t in targets}>={c['id'] for c in cards if c['category']=='data'}
+assert {(t.get('category'),t['branch']) for t in targets}>={('reading','reading-evidence'),('definition','given-rules')}
+print('task navigation: 15 data methods and 2 cross-category calls; all targets resolve')

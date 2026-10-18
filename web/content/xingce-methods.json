@@ -504,6 +504,113 @@
       "use": "借用基期还原、分数比较与范围思路；本页公式由数量关系复核，不继承固定截位口诀。"
     },
     "paused": false,
-    "status": "通用流程第一版；题内示范已核验，整类迁移效果待验证"
+    "status": "通用流程第一版；题内示范已核验，整类迁移效果待验证",
+    "taskMap": [
+      {
+        "signal": "求合计、差额、当期量，或问能否算出",
+        "targets": [
+          {
+            "branch": "direct-quantity",
+            "label": "先对口径，再求量"
+          },
+          {
+            "branch": "identifiability",
+            "label": "先判断信息够不够"
+          }
+        ]
+      },
+      {
+        "signal": "问每人、每次、平均数，或平均数变化",
+        "targets": [
+          {
+            "branch": "denominator",
+            "label": "先确定分母"
+          },
+          {
+            "branch": "average-change",
+            "label": "分子分母分别变多少"
+          }
+        ]
+      },
+      {
+        "signal": "求基期、增长率，或增加了多少",
+        "targets": [
+          {
+            "branch": "growth-base",
+            "label": "还原增长起点"
+          },
+          {
+            "branch": "growth-amount",
+            "label": "求增量、比增量"
+          }
+        ]
+      },
+      {
+        "signal": "跨连续几期，或比较年均增长",
+        "targets": [
+          {
+            "branch": "growth-chain",
+            "label": "沿时间轴乘倍数"
+          },
+          {
+            "branch": "shared-endpoint",
+            "label": "先约去共同端点"
+          },
+          {
+            "branch": "annual-growth",
+            "label": "统一增长段数"
+          }
+        ]
+      },
+      {
+        "signal": "问份额、部分量变化，或总体与两类的关系",
+        "targets": [
+          {
+            "branch": "share-change",
+            "label": "判断比重变化"
+          },
+          {
+            "branch": "part-change",
+            "label": "整体与份额合求部分"
+          },
+          {
+            "branch": "added-batch",
+            "label": "先确定混合权重属于哪一期"
+          }
+        ]
+      },
+      {
+        "signal": "从图读数，或选择趋势图、构成图",
+        "targets": [
+          {
+            "branch": "chart-reading",
+            "label": "先认坐标与图例"
+          },
+          {
+            "branch": "trend-chart",
+            "label": "先还原目标序列"
+          },
+          {
+            "branch": "composition-chart",
+            "label": "按同一整体比份额"
+          }
+        ]
+      },
+      {
+        "signal": "问文字能否推出，或按日程与条件选方案",
+        "targets": [
+          {
+            "category": "reading",
+            "branch": "reading-evidence",
+            "label": "核证据与推断范围"
+          },
+          {
+            "category": "definition",
+            "branch": "given-rules",
+            "label": "照题内规则执行"
+          }
+        ]
+      }
+    ]
   }
 ]
