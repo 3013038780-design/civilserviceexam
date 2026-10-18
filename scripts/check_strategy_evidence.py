@@ -81,6 +81,30 @@ if next_batch.get('category')=='资料分析':
  assert audit['source_units']==50 and audit['reviewed_positions']==sum(audit_by[sid]['category']=='定义判断' for sid in reviewed)
  assert not read(R/'策略回查清单.json')['pending']
  assert all(audit_by[x['source_id']]['category']=='资料分析' for x in next_batch['items'])
+data_audit_path=R/'资料覆盖验收.json'
+if data_audit_path.exists():
+ data_audit=read(data_audit_path)
+ data_items=[x for x in inventory if x['category']=='资料分析']
+ assert data_audit['source_units']==len(cat)==50
+ assert data_audit['reviewed_positions']==len(data_items)
+ assert data_audit['states']==dict(collections.Counter(x['status'] for x in data_items))
+ assert all(x['status'] in ['已有策略检验','存在争议'] and x['method'] and x['decisive_basis'] for x in data_items)
+ assert set(data_audit['first_answer_source_gaps'])=={x['source_id'] for x in data_items if x['first_answer'] is None}
+ assert data_audit['recheck_pending']==read(R/'策略回查清单.json')['pending']==[]
+ assert {x['unit_id'] for x in data_audit['units']}=={x['id'] for x in cat}
+ no_data_checked=load_no_data_inspections(R,cat)
+ assert data_audit['no_data_units']==len(no_data_checked)
+ assert data_audit['data_units']==len(cat)-len(no_data_checked)
+ for row in data_audit['units']:
+  actual=[x for x in data_items if x['unit_id']==row['unit_id']]
+  assert row['actual_questions']==sorted(x['question'] for x in actual)
+  assert row['states']==dict(collections.Counter(x['status'] for x in actual))
+  assert row['method_versions']==sorted({m['id']+':'+m['version'] for x in actual for m in x['method']})
+  assert row['no_data_inspected']==(row['unit_id'] in no_data_checked)
+  assert bool(actual)!=row['no_data_inspected']
+ if next_batch.get('category')=='资料分析':
+  assert not next_batch['items'] and not next_batch['category_discovery_units']
+
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3
