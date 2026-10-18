@@ -19,7 +19,14 @@ for f in sorted(p.glob('strategy-evidence-*.js'),key=lambda f:int(f.stem.split('
  t=f.read_text()
  if t.startswith('window.STUDY_STRATEGY_EVIDENCE='): cases=json.loads(t.split('=',1)[1].split(';\n',1)[0])['cases']
  q=json.loads(t.split('Object.assign(window.STUDY_STRATEGY_EVIDENCE.pages,',1)[1].rsplit(');',1)[0]);assert not pages.keys()&q.keys();pages.update(q)
-assert pages==b['strategyEvidence']['pages'] and cases==b['strategyEvidence']['cases'];assert all(k in pages for v in cases.values() for k in v)
+# Byte equality proves externalizing does not recompress or drop original pages.
+import base64
+assert pages.keys()==b['strategyEvidence']['pages'].keys() and cases==b['strategyEvidence']['cases']
+for key,page in pages.items():
+ original=b['strategyEvidence']['pages'][key]
+ assert page['label']==original['label'] and re.fullmatch(r'strategy-pages/[a-f0-9]{24}\.jpg',page['image'])
+ assert (p/page['image']).read_bytes()==base64.b64decode(original['image'].split(',',1)[1])
+assert all(k in pages for v in cases.values() for k in v)
 branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert len(branches)==len({x['id'] for x in branches})==27
 assert all(f.stat().st_size<25*1024*1024 for f in p.rglob('*') if f.is_file())
 dest=Path('本地资料/网站发布/dist')

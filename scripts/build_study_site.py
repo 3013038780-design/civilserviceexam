@@ -200,8 +200,17 @@ def main():
  # Split by complete page records; never split image data or omit a referenced page.
  # Scripts execute in order before app.js, preserving the existing reader contract.
  for stale in local.glob('strategy-evidence*.js'):stale.unlink()
- chunks=[];chunk={};size=0;chunk_limit=8*1024*1024
+ # Hosted pages keep exactly the same JPEG bytes as the portable bundle, but
+ # avoid base64 expansion in JavaScript and load only when the user opens them.
+ hosted_evidence={}
+ strategy_pages=local/'strategy-pages';strategy_pages.mkdir(exist_ok=True)
  for key,value in evidence_pages.items():
+  raw=base64.b64decode(value['image'].split(',',1)[1])
+  image_name=hashlib.sha256(raw).hexdigest()[:24]+'.jpg'
+  (strategy_pages/image_name).write_bytes(raw)
+  hosted_evidence[key]={**value,'image':'strategy-pages/'+image_name}
+ chunks=[];chunk={};size=0;chunk_limit=8*1024*1024
+ for key,value in hosted_evidence.items():
   item_size=len(json_script({key:value}).encode('utf-8'))
   if chunk and size+item_size>chunk_limit:chunks.append(chunk);chunk={};size=0
   chunk[key]=value;size+=item_size
@@ -219,6 +228,6 @@ def main():
   preview=preview.replace('"'+asset+'"','"'+asset+'?v='+digest+'"')
  (local/'index.html').write_text(preview)
  assert all(p.stat().st_size<25*1024*1024 for p in local.rglob('*') if p.is_file()),'Hosted asset exceeds 25 MiB'
- summary={'xingce':len(rows),'shenlun':len(b['shenlun']),'paper_pages':26,'mapped_questions':len(idx),'public_documents':len(public['docs']),'bundle_bytes':(OUT/'公考学习资料包.json').stat().st_size,'html_bytes':(OUT/'公考解题研习室.html').stat().st_size,'source_pdf_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'cross_year_records':len(records),'cross_year_papers':len(papers),'cross_year_original_pages':len(page_jobs),'context_groups':[{'questions':[a,z],'page':p} for a,z,p,_ in groups]}
+ summary={'xingce':len(rows),'shenlun':len(b['shenlun']),'paper_pages':26,'mapped_questions':len(idx),'public_documents':len(public['docs']),'bundle_bytes':(OUT/'公考学习资料包.json').stat().st_size,'html_bytes':(OUT/'公考解题研习室.html').stat().st_size,'source_pdf_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'cross_year_records':len(records),'cross_year_papers':len(papers),'cross_year_original_pages':len(page_jobs),'hosted_strategy_pages':len(set(v['image'] for v in hosted_evidence.values())),'hosted_strategy_image_bytes':sum(f.stat().st_size for f in strategy_pages.glob('*.jpg')),'context_groups':[{'questions':[a,z],'page':p} for a,z,p,_ in groups]}
  (OUT/'构建记录.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2));print(json.dumps(summary,ensure_ascii=False))
 if __name__=='__main__':main()
