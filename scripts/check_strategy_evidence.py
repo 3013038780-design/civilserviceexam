@@ -18,6 +18,8 @@ for x in inventory:
   assert x['source_id'] in reviewed and x['method'] and x['decisive_basis']
   assert all(m['id'] in by and by[m['id']]['version']==m['version'] for m in x['method'])
   case=latest_reviews[x['source_id']]
+  if case.get('actual_task'):
+   assert x['actual_task']==case['actual_task'] and x['classification_status']=='逐题策略审阅确认实际任务',x['source_id']
   if 'first_answer' in case:
    assert x['first_answer']==case['first_answer'],x['source_id']
    if x['first_answer']:
