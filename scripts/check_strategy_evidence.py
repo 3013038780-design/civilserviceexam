@@ -51,7 +51,10 @@ for c in cards:
  for node in t['flow']:
   assert node['question'] and node['choices']
   for edge in node['choices']:
-   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支']
+   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支']
+   if edge['to']=='转趋势图或构成图分支':
+    assert {'trend-chart','composition-chart'}<=set(t.get('related_methods',[]))
+    assert all(by[id]['category']==c['category'] for id in ['trend-chart','composition-chart'])
    if edge['to']=='转构成图或图表定位分支':
     assert {'composition-chart','chart-reading'}<=set(t.get('related_methods',[]))
     assert all(by[id]['category']==c['category'] for id in ['composition-chart','chart-reading'])
