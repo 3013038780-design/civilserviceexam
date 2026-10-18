@@ -138,7 +138,21 @@ if data_practice_path.exists():
     assert proof['kind']==answer['kind']=='self-authored'
     assert proof['answer']==answer['answer'] and proof['questionText']==q['questionText'] and proof['execution']==answer['execution']
     assert answer['proof_id']==q['source_id'] and q['source_id'] not in audit_by
-    if proof.get('proof_type')=='part-direction':
+    if proof.get('proof_type')=='mixed-current':
+     a,b,total_rate=(Fraction(proof['givens'][k]) for k in ['a','b','R'])
+     w=Fraction(proof['base_share']);v=Fraction(proof['current_share'])
+     assert a!=b and 0<w<1 and 1+total_rate>0
+     assert total_rate==w*a+(1-w)*b and v==w*(1+a)/(1+total_rate)==Fraction(1,5)
+     assert proof['answer']=='A'
+    elif proof.get('proof_type')=='mixed-equal':
+     rate=Fraction(proof['rate']);shares=set()
+     for model in proof['models']:
+      a,b,A,B=(Fraction(model[k]) for k in ['base_a','base_b','current_a','current_b'])
+      assert a>0 and b>0 and A==a*(1+rate) and B==b*(1+rate)
+      assert (A+B)/(a+b)-1==rate
+      shares.add(A/(A+B))
+     assert len(shares)>1 and proof['answer']=='D'
+    elif proof.get('proof_type')=='part-direction':
      g={k:Fraction(v) for k,v in proof['givens'].items()}
      assert g['T1']*g['s1']-g['T0']*g['s0']==Fraction(proof['delta'])==25 and proof['answer']=='C'
     elif proof.get('proof_type')=='part-inverse':
