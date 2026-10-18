@@ -52,6 +52,8 @@ for item in items:
     if unit not in source_records:
         info = catalog[unit]
         prefix = str(info['year']) + info['kind']
+        if info['kind'] == '旧卷别或卷别待确认' and info['variant'] == '主卷':
+            prefix = str(info['year']) + '主卷'
         candidates = sorted(LOCAL.glob(prefix + '*候选方法首答.json'))
         candidates += sorted(LOCAL.glob(prefix + '*核验与修订.json'))
         source_records[unit] = [(p, read(p)) for p in candidates]
