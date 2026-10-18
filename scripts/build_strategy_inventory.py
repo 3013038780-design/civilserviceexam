@@ -109,9 +109,18 @@ for u in cat:
  xs=[x for x in items if x['unit_id']==u['id']];l=ledger[u['id']];summary.append({'unit_id':u['id'],'source':u['path'],'text_read_pages':l.get('text_read_pages',[]),'visual_read_pages':l.get('visual_read_pages',[]),'reading_stage':l.get('stage'),'indexed_positions':len(xs),'manual_task_positions':sum(x['actual_task'] is not None for x in xs),'states':dict(collections.Counter(x['status'] for x in xs)),'completeness':'仅索引定位和已有证据关联，不证明自动题号无遗漏；不开展版本审计'})
 write(R/'逐题策略检验清单.json',{'schema':'strategy-audit/v1','saved_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'policy':'抽取/标签不提升策略状态；候选关联待人工；已有首答不覆盖','items':items})
 write(R/'策略检验盘点汇总.json',{'units':summary,'counts':{'units':len(cat),'indexed_positions':len(items),'manual_task_positions':sum(x['actual_task'] is not None for x in items),'states':dict(collections.Counter(x['status'] for x in items))},'unresolved_links_and_locations':gaps,'cards':[{'id':c['id'],'category':c['category'],'title':c['title'],'version':c.get('version'),'note':'例题扩展保持同一方法id，语义合并须人工判断'} for c in cards]})
-# Explicit next 20 already-read definition positions, year descending, catalogue order.
-xs=[x for x in items if x['category']=='定义判断' and x['status'] in ['已读待策略检验','需要回查']];xs.sort(key=lambda x:(0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
+# Advance only after the OpenSpec task and explicit coverage evidence agree.
+plan=(ROOT/'openspec/changes/read-corpus-and-build-transferable-skills/tasks.md').read_text()
+definition_finished=bool(re.search(r'(?m)^- \[x\] 4\.5 ',plan))
+category='资料分析' if definition_finished else '定义判断'
+if definition_finished:
+ audit=read(R/'定义覆盖验收.json')
+ assert audit['source_units']==len(cat) and audit['reviewed_positions']==sum(x['category']=='定义判断' for x in items)
+ assert not read(R/'策略回查清单.json')['pending']
+ assert not any(x['category']=='定义判断' and x['status'] in ['已读待策略检验','需要回查'] for x in items)
+# Already-read positions first, year descending, catalogue order.
+xs=[x for x in items if x['category']==category and x['status'] in ['已读待策略检验','需要回查']];xs.sort(key=lambda x:(0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
 discovery=[{'unit_id':u['id'],'source':u['path'],'action':'尚无人工确认的定义位置；读取实际题型段落后登记，不能按题号猜型或把机器未定位当无题'} for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in items)]
 discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
-write(R/'策略下一批.json',{'capacity':20,'stage':'检验已读定义' if xs else '读取并分流尚未登记定义的来源' if discovery else '来源分流已登记，待教学与遗留回查','question':'检验当前分支是否能识别并执行规则、过程与案例任务；先复用已有首答，未读来源先分流，不能把已读队列清空视为全量完成','items':[{'source_id':x['source_id'],'pages':x['pages'],'actual_task':x['actual_task'],'evidence_links':x['evidence_links']} for x in xs[:20]],'discovery_units':discovery,'no_definition_inspections':[{'unit_id':u,'evidence_file':'定义来源无题检查.json','scope':r['scope']} for u,r in no_definition.items()],'completion_note':'待检题清单为空不证明50来源定义检验完成；分流、争议、知识缺口及教学/个人迁移仍分别验收','rule':'20题默认；复杂共享减10，实际原题题组不拆；未读题另排，不跳过全50范围'})
+write(R/'策略下一批.json',{'capacity':20,'category':category,'stage':'检验已读'+category if xs else '读取并分流尚未登记定义的来源' if discovery else '来源分流已登记，待教学与遗留回查','question':'资料分析先核统计对象、口径和可求性，再选择运算；复用旧首答，不能由答案一致代替策略执行' if definition_finished else '检验当前分支是否能识别并执行规则、过程与案例任务；先复用已有首答，未读来源先分流，不能把已读队列清空视为全量完成','items':[{'source_id':x['source_id'],'pages':x['pages'],'actual_task':x['actual_task'],'evidence_links':x['evidence_links']} for x in xs[:20]],'discovery_units':discovery,'no_definition_inspections':[{'unit_id':u,'evidence_file':'定义来源无题检查.json','scope':r['scope']} for u,r in no_definition.items()],'completion_note':'待检题清单为空不证明50来源定义检验完成；分流、争议、知识缺口及教学/个人迁移仍分别验收','rule':'20题默认；复杂共享减10，实际原题题组不拆；未读题另排，不跳过全50范围'})
 print(json.dumps({'units':len(summary),'positions':len(items),'states':dict(collections.Counter(x['status'] for x in items)),'unresolved_groups':len(gaps),'next':[x['source_id'] for x in xs[:20]]},ensure_ascii=False))

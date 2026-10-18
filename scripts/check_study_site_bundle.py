@@ -6,7 +6,12 @@ changes=[]
 for new,previous in zip(b['xingce'],ob['xingce']):
  assert new['题号']==previous['题号'] and new['首答']==previous['首答'] and new['机构参考']==previous['机构参考']
  if new!=previous:
-  assert new['题号']==96 and {k for k in new if new.get(k)!=previous.get(k)}=={'教学路径'}
+  assert new['题号']==96
+  fields={k for k in new if new.get(k)!=previous.get(k)}
+  assert fields <= {'教学路径','停止条件'}
+  if '停止条件' in fields:
+   assert previous['停止条件']=='一个符合定义的反例足以否定由定义推出该大小关系。'
+   assert new['停止条件']=='口径核对后，D的回报程度与通常大小关系缺少题内依据；与其余项比较后相对选择D并保留边界，不能凭一个反例就停止。'
   changes.append(96)
 
 pages={};cases=None

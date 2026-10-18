@@ -60,6 +60,11 @@ if not next_batch['items'] and expected_discovery:
  assert next_batch['stage']=='读取并分流尚未登记定义的来源'
 if not next_batch['items'] and not expected_discovery:
  assert next_batch['stage']=='来源分流已登记，待教学与遗留回查'
+if next_batch.get('category')=='资料分析':
+ audit=read(R/'定义覆盖验收.json')
+ assert audit['source_units']==50 and audit['reviewed_positions']==len(reviewed)
+ assert not read(R/'策略回查清单.json')['pending']
+ assert all(audit_by[x['source_id']]['category']=='资料分析' for x in next_batch['items'])
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3
