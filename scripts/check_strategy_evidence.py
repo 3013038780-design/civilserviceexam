@@ -13,6 +13,7 @@ cat=read(R/'主版本阅读目录.json');inventory=read(R/'逐题策略检验清
 assert len(cat)==len(summary['units'])==50
 assert len(by)==len(cards)==27
 assert len(inventory)==len({x['source_id'] for x in inventory})
+assert {x['source_id'] for x in summary['first_answer_gaps']}=={x['source_id'] for x in inventory if x['method'] and x['first_answer'] is None}
 assert len(reviews)==len({x['source_id'] for x in reviews})==80
 reviewed={x['source_id'] for x in reviews}
 latest_reviews={x['source_id']:x for x in reviews}

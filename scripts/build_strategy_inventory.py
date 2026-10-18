@@ -108,7 +108,8 @@ summary=[]
 for u in cat:
  xs=[x for x in items if x['unit_id']==u['id']];l=ledger[u['id']];summary.append({'unit_id':u['id'],'source':u['path'],'text_read_pages':l.get('text_read_pages',[]),'visual_read_pages':l.get('visual_read_pages',[]),'reading_stage':l.get('stage'),'indexed_positions':len(xs),'manual_task_positions':sum(x['actual_task'] is not None for x in xs),'states':dict(collections.Counter(x['status'] for x in xs)),'completeness':'仅索引定位和已有证据关联，不证明自动题号无遗漏；不开展版本审计'})
 write(R/'逐题策略检验清单.json',{'schema':'strategy-audit/v1','saved_at':datetime.datetime.now(datetime.timezone.utc).isoformat(),'policy':'抽取/标签不提升策略状态；候选关联待人工；已有首答不覆盖','items':items})
-write(R/'策略检验盘点汇总.json',{'units':summary,'counts':{'units':len(cat),'indexed_positions':len(items),'manual_task_positions':sum(x['actual_task'] is not None for x in items),'states':dict(collections.Counter(x['status'] for x in items))},'unresolved_links_and_locations':gaps,'cards':[{'id':c['id'],'category':c['category'],'title':c['title'],'version':c.get('version'),'note':'例题扩展保持同一方法id，语义合并须人工判断'} for c in cards]})
+first_answer_gaps=[{'source_id':x['source_id'],'status':'已有策略审阅但原首答来源未关联，不补造','issues':x['issues']} for x in items if x['method'] and x['first_answer'] is None]
+write(R/'策略检验盘点汇总.json',{'units':summary,'first_answer_gaps':first_answer_gaps,'counts':{'units':len(cat),'indexed_positions':len(items),'manual_task_positions':sum(x['actual_task'] is not None for x in items),'states':dict(collections.Counter(x['status'] for x in items))},'unresolved_links_and_locations':gaps,'cards':[{'id':c['id'],'category':c['category'],'title':c['title'],'version':c.get('version'),'note':'例题扩展保持同一方法id，语义合并须人工判断'} for c in cards]})
 # Advance only after the OpenSpec task and explicit coverage evidence agree.
 plan=(ROOT/'openspec/changes/read-corpus-and-build-transferable-skills/tasks.md').read_text()
 definition_finished=bool(re.search(r'(?m)^- \[x\] 4\.5 ',plan))
