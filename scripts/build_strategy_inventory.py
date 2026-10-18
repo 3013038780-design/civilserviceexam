@@ -2,6 +2,7 @@
 from pathlib import Path
 import json,re,unicodedata,hashlib,collections,datetime
 from definition_source_checks import load_no_definition_inspections
+from data_source_checks import load_no_data_inspections
 ROOT=Path(__file__).resolve().parents[1]; R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 def write(p,d):
@@ -124,6 +125,7 @@ xs=[x for x in items if x['category']==category and x['status'] in ['已读待�
 discovery=[{'unit_id':u['id'],'source':u['path'],'action':'尚无人工确认的定义位置；读取实际题型段落后登记，不能按题号猜型或把机器未定位当无题'} for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in items)]
 discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
 category_source_scope=[]
+no_data=load_no_data_inspections(R,cat)
 if category=='资料分析':
  for u in cat:
   unit_items=[x for x in items if x['unit_id']==u['id']]
@@ -134,13 +136,18 @@ if category=='资料分析':
   all_located_classified=bool(unit_items) and all(x['actual_task'] is not None for x in unit_items)
   section_check=l.get('category_scope_checks',{}).get(category)
   if section_check:
-   assert section_check['status']=='实际资料段已全量处理' and section_check['questions'] and section_check['material_pages']
    assert (R/section_check['evidence']).is_file()
-   assert all(any(x['question']==n and x['status'] in ['已有策略检验','存在争议'] for x in data_items) for n in section_check['questions'])
+   if section_check['status']=='实际检查未见资料分析':
+    assert u['id'] in no_data and section_check['questions']==[] and not data_items
+    assert section_check['evidence']=='资料来源无题检查.json'
+    assert section_check['inspection_pages']==no_data[u['id']]['inspection_pages']
+   else:
+    assert section_check['status']=='实际资料段已全量处理' and section_check['questions'] and section_check['material_pages']
+    assert all(any(x['question']==n and x['status'] in ['已有策略检验','存在争议'] for x in data_items) for n in section_check['questions'])
   # Route partially read sources even when every previously labelled data
   # question was reviewed. Routing never promotes reading or strategy status.
   needs_reading=not (section_check or ((text_covered or baseline_covered) and all_located_classified))
-  category_source_scope.append({'unit_id':u['id'],'source':u['path'],'reviewed_source_positions':sum(x['method'] is not None for x in data_items),'known_pending_positions':sum(x['status'] in ['已读待策略检验','需要回查'] for x in data_items),'needs_actual_section_reading':needs_reading,'basis':'局部阅读不证明资料段已覆盖；读取实际段落核未登记题，旧答复用' if needs_reading else '实际资料段已人工登记全量处理；其他模块不据此标已读' if section_check else '已有整卷阅读或135题基线与实际任务标签；已读资料仍按逐题证据验收'})
+  category_source_scope.append({'unit_id':u['id'],'source':u['path'],'reviewed_source_positions':sum(x['method'] is not None for x in data_items),'known_pending_positions':sum(x['status'] in ['已读待策略检验','需要回查'] for x in data_items),'needs_actual_section_reading':needs_reading,'no_data_inspected':u['id'] in no_data,'basis':'实际模块与边界检查未见资料；不增加阅读或策略检验题数' if u['id'] in no_data else '局部阅读不证明资料段已覆盖；读取实际段落核未登记题，旧答复用' if needs_reading else '实际资料段已人工登记全量处理；其他模块不据此标已读' if section_check else '已有整卷阅读或135题基线与实际任务标签；已读资料仍按逐题证据验收'})
 category_discovery=[dict(x,action='读取原卷实际资料段，确认题目及材料组边界；不按题号猜型，不把机器未定位当无题') for x in category_source_scope if x['needs_actual_section_reading']]
 category_discovery.sort(key=lambda x:(-units[x['unit_id']]['year'],order[x['unit_id']]))
 stage='检验已读'+category if xs else '读取并分流尚未覆盖的资料段' if category_discovery else '资料已读队列清空，待全量范围验收' if category=='资料分析' else '读取并分流尚未登记定义的来源' if discovery else '来源分流已登记，待教学与遗留回查'

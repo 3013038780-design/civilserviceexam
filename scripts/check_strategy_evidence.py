@@ -2,6 +2,7 @@
 from pathlib import Path
 import collections,hashlib,json
 from definition_source_checks import load_no_definition_inspections
+from data_source_checks import load_no_data_inspections
 ROOT=Path(__file__).resolve().parents[1];R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 for name in ['策略实施_首答保护哈希.json','策略实施_新增首答保护哈希.json']:
@@ -63,6 +64,14 @@ if next_batch.get('category')!='资料分析' and not next_batch['items'] and no
  assert next_batch['stage']=='来源分流已登记，待教学与遗留回查'
 if next_batch.get('category')=='资料分析':
  scope=next_batch['category_source_scope']
+ no_data=load_no_data_inspections(R,cat)
+ assert {x['unit_id'] for x in scope if x.get('no_data_inspected')}==set(no_data)
+ for uid in no_data:
+  assert not any(x['unit_id']==uid and x['category']=='资料分析' for x in inventory)
+  row=next(x for x in read(R/'阅读账本.json')['rows'] if x['id']==uid)
+  check=row['category_scope_checks']['资料分析']
+  assert check['status']=='实际检查未见资料分析' and check['questions']==[]
+  assert not next(x for x in scope if x['unit_id']==uid)['needs_actual_section_reading']
  assert len(scope)==len(cat) and {x['unit_id'] for x in scope}=={x['id'] for x in cat}
  pending_sections=next_batch['category_discovery_units']
  assert {x['unit_id'] for x in pending_sections}=={x['unit_id'] for x in scope if x['needs_actual_section_reading']}
