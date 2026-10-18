@@ -3,6 +3,11 @@ from pathlib import Path
 import collections,hashlib,json
 ROOT=Path(__file__).resolve().parents[1];R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
+for name in ['策略实施_首答保护哈希.json','策略实施_新增首答保护哈希.json']:
+ manifest=R/name
+ if manifest.exists():
+  for path,digest in read(manifest).items():
+   assert hashlib.sha256((ROOT/path).read_bytes()).hexdigest()==digest,path
 cat=read(R/'主版本阅读目录.json');inventory=read(R/'逐题策略检验清单.json')['items'];summary=read(R/'策略检验盘点汇总.json');reviews=read(R/'定义80题_策略执行审阅.json')['cases'];cards=read(ROOT/'web/content/xingce-branches.json');by={c['id']:c for c in cards}
 assert len(cat)==len(summary['units'])==50
 assert len(by)==len(cards)==26
