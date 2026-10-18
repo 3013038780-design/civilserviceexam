@@ -124,7 +124,15 @@ if data_practice_path.exists():
     assert proof['kind']==answer['kind']=='self-authored'
     assert proof['answer']==answer['answer'] and proof['questionText']==q['questionText'] and proof['execution']==answer['execution']
     assert answer['proof_id']==q['source_id'] and q['source_id'] not in audit_by
-    if 'exact_fraction' in proof:
+    if proof.get('proof_type')=='annual-unequal':
+     a,b=proof['givens'];t=1+Fraction(proof['threshold'])
+     assert Fraction(a['ratio'])<t**a['n'] and Fraction(b['ratio'])>t**b['n'] and proof['answer']=='B'
+    elif proof.get('proof_type')=='annual-mean':
+     rates=list(map(Fraction,proof['rates']));multiplier=Fraction(1)
+     for rate in rates:multiplier*=1+rate
+     assert sum(rates)/len(rates)==Fraction(proof['arithmetic'])==0
+     assert multiplier==Fraction(proof['compound_multiplier'])<1 and proof['answer']=='A'
+    elif 'exact_fraction' in proof:
      value=Fraction(proof['givens']['T_over_B'])/Fraction(proof['givens']['T_over_A'])-1
      assert proof['target']=='A/B−1' and str(value)==proof['exact_fraction']=='-1/6'
     else:
