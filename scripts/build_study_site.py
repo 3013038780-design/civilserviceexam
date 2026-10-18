@@ -3,6 +3,7 @@ Run with the bundled Python (Pillow, pdfplumber, pypdf). Private files stay igno
 """
 from pathlib import Path
 import argparse,base64,hashlib,io,json,logging,re,shutil,subprocess
+from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 import pdfplumber
 ROOT=Path(__file__).resolve().parents[1]
@@ -34,9 +35,46 @@ def image_url(im):
  b=io.BytesIO();im.convert('RGB').save(b,format='JPEG',quality=85,optimize=True)
  return 'data:image/jpeg;base64,'+base64.b64encode(b.getvalue()).decode()
 def json_script(o):return json.dumps(o,ensure_ascii=False,separators=(',',':')).replace('<','\\u003c').replace('\u2028','\\u2028').replace('\u2029','\\u2029')
+def cross_year_notes(cards):
+ notes=[]
+ for c in cards:
+  for i,part in enumerate(re.split(r'\n\s*\n',c.get('worked',''))):
+   prefix=part.split('：',1)[0]
+   clean=re.sub(r'https?://[^\s)]+','',part)
+   years=sorted(set(map(int,re.findall(r'20\d{2}',prefix))),reverse=True)
+   if not years:
+    source_year=re.search(r'(20\d{2})(?:副省|地市|执法|行政执法|主卷|卷一|卷二|A|B|第)',clean)
+    if not source_year:continue
+    years=[int(source_year[1])]
+   title=prefix if len(prefix)<85 else f'{years[0]}年 · {c["title"]}'
+   notes.append({'id':f'note-{c["id"]}-{i}','kind':'note','category':c['category'],'year':years[0],'years':years,'title':title,'execution':part,'methods':[{'id':c['id'],'version':c['version']}],'status':'已整理示范；此类别全量检验未完成'})
+ return notes
+
+def cross_year_records():
+ root=ROOT/'本地资料/真题策略研究';inventory=json.loads((root/'逐题策略检验清单.json').read_text())['items'];catalog={x['id']:x for x in json.loads((root/'主版本阅读目录.json').read_text())};records=[];cache={};papers={}
+ for x in inventory:
+  if x['status'] not in ['已有策略检验','存在争议']:continue
+  if x['category'] not in ['定义判断','资料分析']:continue
+  unit=catalog[x['unit_id']];source=Path(unit['path']);paper_key=hashlib.sha256(source.read_bytes()).hexdigest()[:16];paper='cross-year-papers/'+paper_key+'.pdf';papers[paper]=source
+  review={}
+  for link in x.get('evidence_links',[]):
+   if link.get('role')!='逐题策略机制审阅':continue
+   name=link['file']
+   if name not in cache:cache[name]=json.loads((root/name).read_text())
+   data=cache[name]
+   if isinstance(data,dict):
+    match=next((r for r in data.get('cases',[]) if r.get('source_id')==x['source_id']),None)
+    if match:review=match
+  pages=sorted(set(review.get('visual_pages',[])+review.get('text_pages',[]))) or x.get('pages',[]) or x.get('located_pages',[])
+  pages=[n for n in pages if isinstance(n,int) and n>0]
+  kind=unit['kind'];variant=unit['variant'];edition=str(unit['year'])+(('主卷' if variant=='主卷' else variant) if kind=='旧卷别或卷别待确认' else kind+('' if variant=='主卷' else variant))
+  records.append({'id':'review-'+hashlib.sha256(x['source_id'].encode()).hexdigest()[:14],'kind':'review','category':'definition' if x['category']=='定义判断' else 'data','year':x['year'],'years':[x['year']],'title':f'{edition} · 第{x["question"]}题','task':x['actual_task'],'status':x['status'],'execution':x['decisive_basis'],'result':x['result'],'issues':x.get('issues',[]),'methods':x.get('method',[]),'first':(x.get('first_answer') or {}).get('answer'),'exposure':x.get('reference_exposure','接触范围见原记录'),'paper':paper,'pages':pages,'reference':review.get('reference'),'source_id':x['source_id']})
+ return records,papers
+
 def main():
  parser=argparse.ArgumentParser(description=__doc__);parser.add_argument('--public-only',action='store_true');args=parser.parse_args()
  public={'docs':[dict(id=id,path=path,title=title,group=group,description=desc,content=(ROOT/path).read_text()) for id,path,title,group,desc in DOCS],'assets':{},'methods':json.loads((WEB/'content/xingce-methods.json').read_text()),'strategyCards':json.loads((WEB/'content/xingce-branches.json').read_text())}
+ public['crossYearNotes']=cross_year_notes(public['strategyCards'])
  for p in [ROOT/'图示/行测十一类六维任务图.png',ROOT/'行策20题试做结果.jpg']:
   public['assets'][str(p.relative_to(ROOT))]='assets/'+p.name;(WEB/'assets').mkdir(exist_ok=True);shutil.copy2(p,WEB/'assets'/p.name)
  (WEB/'public-data.js').write_text('window.STUDY_PUBLIC='+json_script(public)+';\n')
@@ -83,6 +121,17 @@ def main():
   sections={};parts=re.split(r'(?m)^## 第([1-5])题[^\n]*\n',mapping)
   for i in range(1,len(parts),2):sections[int(parts[i])]=parts[i+1].strip()
   b={'schema':'gongkao-study/v1','title':'2026副省级逐题研习','xingce':rows,'shenlun':json.loads((ROOT/'本地作答/2026副省级申论/首答/五题首答.json').read_text()),'shenlunSections':sections,'shenlunReview':(ROOT/'本地作答/2026副省级申论/核验与教学/五题核验报告.md').read_text(),'shenlunRevisions':(ROOT/'本地作答/2026副省级申论/核验与教学/核验后改进稿.md').read_text(),'paper':{'pages':[image_url(im) for im in imgs],'map':{n:{'page':m['page'],'y':round(m['y'],5)} for n,m in idx.items()}}}
+ records,papers=cross_year_records()
+ b['crossYearExamples']=records
+ page_jobs={}
+ for x in records:
+  key=Path(x['paper']).stem
+  x['pageImages']=[{'page':page,'image':f'cross-year-pages/{key}-{page}.jpg'} for page in x['pages']]
+  for page in x['pageImages']:page_jobs[page['image']]=(papers[x['paper']],page['page'])
+ def render_original(item):
+  name,(pdf_path,page)=item;target=OUT/name;target.parent.mkdir(parents=True,exist_ok=True)
+  if not target.exists():subprocess.run(['pdftoppm','-f',str(page),'-l',str(page),'-scale-to','2000','-singlefile','-jpeg','-jpegopt','quality=82',str(pdf_path),str(target.with_suffix(''))],check=True,stdout=subprocess.DEVNULL,stderr=subprocess.PIPE)
+ with ThreadPoolExecutor(max_workers=4) as workers:list(workers.map(render_original,page_jobs.items()))
  # Additional original pages belong only to the private bundle, never public-data.js.
  evidence_root=ROOT/'本地资料/真题策略研究/视觉阅读'
  case_specs={
@@ -137,6 +186,10 @@ def main():
  (OUT/'公考解题研习室.html').write_text(html)
  # An HTTP preview with the same preloaded data, no need to import during QA.
  local=OUT/'preview';shutil.copytree(WEB,local,dirs_exist_ok=True)
+ for name,source_paper in papers.items():
+  target=local/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,target)
+  portable=OUT/name;portable.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,portable)
+ shutil.copytree(OUT/'cross-year-pages',local/'cross-year-pages',dirs_exist_ok=True)
  # Keep hosted files below the static host's per-file limit as evidence grows.
  # The portable single-file edition above retains the complete bundle.
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
@@ -162,6 +215,6 @@ def main():
   preview=preview.replace('"'+asset+'"','"'+asset+'?v='+digest+'"')
  (local/'index.html').write_text(preview)
  assert all(p.stat().st_size<25*1024*1024 for p in local.rglob('*') if p.is_file()),'Hosted asset exceeds 25 MiB'
- summary={'xingce':len(rows),'shenlun':len(b['shenlun']),'paper_pages':26,'mapped_questions':len(idx),'public_documents':len(public['docs']),'bundle_bytes':(OUT/'公考学习资料包.json').stat().st_size,'html_bytes':(OUT/'公考解题研习室.html').stat().st_size,'source_pdf_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'context_groups':[{'questions':[a,z],'page':p} for a,z,p,_ in groups]}
+ summary={'xingce':len(rows),'shenlun':len(b['shenlun']),'paper_pages':26,'mapped_questions':len(idx),'public_documents':len(public['docs']),'bundle_bytes':(OUT/'公考学习资料包.json').stat().st_size,'html_bytes':(OUT/'公考解题研习室.html').stat().st_size,'source_pdf_sha256':hashlib.sha256(source.read_bytes()).hexdigest(),'cross_year_records':len(records),'cross_year_papers':len(papers),'cross_year_original_pages':len(page_jobs),'context_groups':[{'questions':[a,z],'page':p} for a,z,p,_ in groups]}
  (OUT/'构建记录.json').write_text(json.dumps(summary,ensure_ascii=False,indent=2));print(json.dumps(summary,ensure_ascii=False))
 if __name__=='__main__':main()

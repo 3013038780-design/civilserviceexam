@@ -27,3 +27,38 @@ for f in dest.glob('strategy-evidence-*.js'):
  if not (p/f.name).exists():f.unlink()
 shutil.copytree(p,dest,dirs_exist_ok=True)
 print(json.dumps({'cards':len(branches),'pages':len(pages),'chunks':len(list(p.glob('strategy-evidence-*.js'))),'original135_first_answers_unchanged':True,'teaching_corrections':changes,'references_closed':True,'all_files_under_25MiB':True},ensure_ascii=False))
+
+# Cross-year review records must match the actual inventory, including disputes.
+import hashlib
+inventory=json.loads(Path('本地资料/真题策略研究/逐题策略检验清单.json').read_text())['items']
+expected={x['source_id']:x for x in inventory if x['status'] in ['已有策略检验','存在争议'] and x['category'] in ['定义判断','资料分析']}
+examples=b['crossYearExamples'];assert len(examples)==len({x['id'] for x in examples})==len(expected)
+assert {x['source_id'] for x in examples}==expected.keys()
+catalog={x['id']:x for x in json.loads(Path('本地资料/真题策略研究/主版本阅读目录.json').read_text())}
+for x in examples:
+ old=expected[x['source_id']];assert x['execution']==old['decisive_basis'] and x['status']==old['status'] and x['methods']==old['method']
+ assert x['year']==old['year'] and re.fullmatch(r'cross-year-papers/[a-f0-9]{16}\.pdf',x['paper'])
+ source=Path(catalog[old['unit_id']]['path']);assert hashlib.sha256((p/x['paper']).read_bytes()).digest()==hashlib.sha256(source.read_bytes()).digest()
+ page_count=len(json.loads((Path('本地资料/真题策略研究/抽取')/old['unit_id']/'pages.json').read_text()))
+ assert all(1<=page<=page_count for page in x['pages'])
+ assert (dest/x['paper']).exists()
+public=(p/'public-data.js').read_text();assert 'crossYearExamples' not in public and 'cross-year-papers/' not in public
+assert '看它怎样用于2026真题' not in (p/'app.js').read_text()
+print(json.dumps({'cross_year_records':len(examples),'disputes_preserved':sum(x['status']=='存在争议' for x in examples),'years':sorted({x['year'] for x in examples}),'original_pdfs':len({x['paper'] for x in examples}),'private_public_boundary':True},ensure_ascii=False))
+notes=json.loads(public.split('=',1)[1].rstrip(';\n'))['crossYearNotes']
+url_year_case=next(x for x in notes if x['title'].startswith('2003B85'))
+assert url_year_case['year']==2003 and 2016 not in url_year_case['years']
+assert all(any(x['category']==category for x in notes) for category in ['cloze','structure','reading','logic','analogy'])
+
+original_images=set()
+for x in examples:
+ assert [v['page'] for v in x['pageImages']]==x['pages'] and x['pageImages']
+ for image in x['pageImages']:
+  assert image['image']==f"cross-year-pages/{Path(x['paper']).stem}-{image['page']}.jpg"
+  assert (p/image['image']).is_file() and (dest/image['image']).is_file()
+  original_images.add(image['image'])
+from PIL import Image
+for name in original_images:
+ with Image.open(p/name) as im:assert im.format=='JPEG' and max(im.size)==2000
+assert 'cross-year-pages/' not in public
+print(json.dumps({'lazy_original_images':len(original_images),'every_review_has_original_pages':True},ensure_ascii=False))
