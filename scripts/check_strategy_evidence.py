@@ -13,6 +13,7 @@ for p in R.glob('定义策略检验_*.json'):reviewed.update(x['source_id'] for 
 for x in inventory:
  if x['status'] in ['已有策略检验','存在争议']:
   assert x['source_id'] in reviewed and x['method'] and x['decisive_basis']
+  assert all(m['id'] in by and by[m['id']]['version']==m['version'] for m in x['method'])
  if x['reading'].startswith('定位自抽取'):assert x['status']=='尚未阅读' and not x['method']
 for c in cards:
  version=hashlib.sha256(json.dumps({k:c[k] for k in ['signal','steps','stop','boundary']},sort_keys=True,ensure_ascii=False).encode()).hexdigest()[:12]
@@ -28,11 +29,11 @@ for c in cards:
 audit_by={x['source_id']:x for x in inventory}
 for x in reviews:
  for m in x['methods']:
-  if m['version']!=by[m['id']]['version']:assert audit_by[x['source_id']]['status']=='需要回查'
+  if m['version']!=by[m['id']]['version']:assert audit_by[x['source_id']]['status']=='需要回查' or all(by[z['id']]['version']==z['version'] for z in audit_by[x['source_id']]['method'])
 
 practice=read(R/'定义样板_试用入口.json')
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3
  assert all(set(q)=={'source_id','label','pages','image'} and q['image'].startswith('data:image/jpeg;base64,') for q in group['questions'])
-print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_definition_positions':80,'assessment':dict(collections.Counter(x['assessment'] for x in reviews)),'visual_branches':sum('teaching' in c for c in cards),'auto_read_or_validation_promotion':False},ensure_ascii=False))
+print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_definition_positions':len(reviewed),'old80_assessment':dict(collections.Counter(x['assessment'] for x in reviews)),'review_states':dict(collections.Counter(x['status'] for x in inventory if x['method'])),'visual_branches':sum('teaching' in c for c in cards),'auto_read_or_validation_promotion':False},ensure_ascii=False))

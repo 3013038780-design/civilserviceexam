@@ -330,19 +330,19 @@
         "label": "关系比较"
       },
       {
-        "signal": "自定符号、公式或算法",
+        "signal": "符号、公式、语言测试或形式标准",
         "branch": "given-rules",
         "label": "照规则执行"
       },
       {
-        "signal": "步骤、流程、树或状态变化",
+        "signal": "步骤顺序、路径或状态变化",
         "branch": "procedure",
         "label": "检查第一步违规"
       },
       {
-        "signal": "文字描述对应器物图片",
+        "signal": "外形描述、连接关系或集合图",
         "branch": "visual-description",
-        "label": "部位逐项核对"
+        "label": "图文核对"
       }
     ]
   },

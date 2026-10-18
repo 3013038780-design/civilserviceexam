@@ -75,9 +75,9 @@ p=R/'定义80题_策略执行审阅.json'
 if p.exists():
  for c in read(p)['cases']:
   key=c['source_id'];row=rows[key];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure='已接触目标参考；本轮复用旧首答及已存核验作机制审阅，不称新独立作答',issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'})
-for p in sorted(R.glob('定义策略检验_*.json')):
+for p in sorted(R.glob('定义策略检验_*.json'),key=lambda path:read(path).get('saved_at','')):
  for c in read(p)['cases']:
-  row=rows[c['source_id']];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure='复用旧首答及既有参考，非新独立作答',issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'})
+  row=rows[c['source_id']];row.update(status=c['inventory_status'],method=c['methods'],decisive_basis=c['execution'],result=c['assessment'],reference_exposure=c.get('review_type','接触状态见该检验原记录'),issues=c['issues']);row['evidence_links'].append({'file':p.name,'question':row['question'],'role':'逐题策略机制审阅'})
 cards=read(ROOT/'web/content/xingce-branches.json')
 current_versions={c['id']:c.get('version') for c in cards}
 for row in rows.values():
