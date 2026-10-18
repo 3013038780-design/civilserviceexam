@@ -105,6 +105,26 @@ if data_audit_path.exists():
  if next_batch.get('category')=='资料分析':
   assert not next_batch['items'] and not next_batch['category_discovery_units']
 
+data_practice_path=R/'资料分支_试用入口.json'
+if data_practice_path.exists():
+ import base64
+ data_practice=read(data_practice_path);practice_review=read(R/'资料分支_试用核验.json')
+ crops={x['source_id']:x for x in read(R/'资料分支_试用裁片来源.json')['cases']}
+ for method,group in data_practice.items():
+  assert by[method].get('teaching') and group['mode']=='guided-transfer/v1' and 3<=len(group['questions'])<=5
+  assert len({q['source_id'] for q in group['questions']})==len(group['questions'])
+  assert {q['source_id'] for q in group['questions']}==set(practice_review[method])
+  for q in group['questions']:
+   assert set(q)=={'source_id','label','pages','image','hint'}
+   original=audit_by[q['source_id']];answer=practice_review[method][q['source_id']]
+   assert original['status']=='已有策略检验' and method in {m['id'] for m in original['method']}
+   expected_answer=latest_reviews[q['source_id']].get('working_answer',original['first_answer']['answer'])
+   assert answer['answer']==expected_answer and answer['execution']==original['decisive_basis']
+   assert answer['review_id']=='review-'+hashlib.sha256(q['source_id'].encode()).hexdigest()[:14]
+   raw=base64.b64decode(q['image'].split(',',1)[1]);crop=crops[q['source_id']]
+   assert hashlib.sha256(raw).hexdigest()==crop['jpeg_sha256'] and len(raw)==crop['image_bytes']
+   assert q['pages']==sorted({r['page'] for r in crop['regions']})
+
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3

@@ -178,6 +178,12 @@ def main():
  b['strategyEvidence']={'pages':evidence_pages,'cases':evidence_cases}
  practice_file=ROOT/'本地资料/真题策略研究/定义样板_试用入口.json'
  if practice_file.exists():b['strategyPractice']=json.loads(practice_file.read_text())
+ data_practice_file=ROOT/'本地资料/真题策略研究/资料分支_试用入口.json'
+ if data_practice_file.exists():
+  practice=json.loads(data_practice_file.read_text())
+  assert not set(practice)&set(b.get('strategyPractice',{}))
+  b.setdefault('strategyPractice',{}).update(practice)
+  b['strategyPracticeReview']=json.loads((ROOT/'本地资料/真题策略研究/资料分支_试用核验.json').read_text())
  OUT.mkdir(parents=True,exist_ok=True)
  (OUT/'公考学习资料包.json').write_text(json_script(b))
  html=(WEB/'index.html').read_text().replace('<link rel="stylesheet" href="app.css">','<style>'+(WEB/'app.css').read_text()+'</style>')

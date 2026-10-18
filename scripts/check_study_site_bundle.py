@@ -68,6 +68,15 @@ from PIL import Image
 for name in original_images:
  with Image.open(p/name) as im:assert im.format=='JPEG' and max(im.size)==2000
 assert 'cross-year-pages/' not in public
+# Practice questions carry only original crops and optional hints; answers live
+# in a separate private section and are not rendered until explicitly opened.
+if 'strategyPracticeReview' in b:
+ assert 'strategyPracticeReview' not in public and 'guided-transfer/v1' not in public
+ guided={key:value for key,value in b['strategyPractice'].items() if value.get('mode')=='guided-transfer/v1'}
+ expected_practice=json.loads(Path('本地资料/真题策略研究/资料分支_试用入口.json').read_text())
+ assert guided==expected_practice
+ assert b['strategyPracticeReview']==json.loads(Path('本地资料/真题策略研究/资料分支_试用核验.json').read_text())
+ assert all('answer' not in q and 'execution' not in q for group in guided.values() for q in group['questions'])
 print(json.dumps({'lazy_original_images':len(original_images),'every_review_has_original_pages':True},ensure_ascii=False))
 
 assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*1024, "Expanded static assets leave too little archive headroom"
