@@ -70,7 +70,8 @@
   const docCards=(docs)=>`<div class="card-grid">${docs.map(d=>`<button class="resource-card" data-doc="${d.id}"><div class="eyebrow">${esc(d.group)}</div><span class="arrow">↗</span><h2>${esc(d.title)}</h2><p>${esc(d.description||'按任务查阅，不必从头读完。')}</p></button>`).join('')}</div>`;
   function teachingExample(example,kind){
     if(!example)return '';
-    return `<section class="teaching-example ${kind}"><h4>${esc(example.title)}</h4><ol>${example.steps.map(s=>`<li><span class="node-ref">节点 ${esc(s.node)}</span> ${esc(s.text)}</li>`).join('')}</ol></section>`;
+    const source=example.source_id&&(bundle?.crossYearExamples||[]).find(x=>x.source_id===example.source_id);
+    return `<section class="teaching-example ${kind}"><h4>${esc(example.title)}</h4><ol>${example.steps.map(s=>`<li><span class="node-ref">节点 ${esc(s.node)}</span> ${esc(s.text)}</li>`).join('')}</ol>${source?`<a class="paper-link teaching-source-link" href="#/example/${esc(source.id)}">看这道示范的原题与逐题依据 →</a>`:example.authored?'<p class="subtle">自拟边界，用于检查适用条件，不计真题检验。</p>':''}</section>`;
   }
   function relationMap(t){
     if(t.relation_map!=='shared-endpoint')return '';

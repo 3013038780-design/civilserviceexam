@@ -143,3 +143,18 @@ targets=[t for item in data['taskMap'] for t in item.get('targets',[item])]
 assert {t['branch'] for t in targets}>={c['id'] for c in cards if c['category']=='data'}
 assert {(t.get('category'),t['branch']) for t in targets}>={('reading','reading-evidence'),('definition','given-rules')}
 print('task navigation: 15 data methods and 2 cross-category calls; all targets resolve')
+
+# Every linked teaching example must resolve to its exact private original and method.
+by_source={x['source_id']:x for x in b['crossYearExamples']}
+linked=[]
+for card in cards:
+ for role in ['success','failure']:
+  example=card.get('teaching',{}).get(role,{})
+  if not example.get('source_id'):continue
+  source=by_source[example['source_id']]
+  assert card['id'] in {m['id'] for m in source['methods']}
+  assert source['paper'] and source['pageImages']
+  assert role!='success' or source['status']=='已有策略检验'
+  linked.append(example['source_id'])
+assert len(linked)==len(set(linked))==29
+print('teaching example provenance: 29 exact original-question links; disputes excluded from success examples')

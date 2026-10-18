@@ -60,6 +60,11 @@ for c in cards:
     assert all(by[id]['category']==c['category'] for id in ['composition-chart','chart-reading'])
  for ex in [t['success'],t['failure']]:
   assert all(s['node'] in ids and s['text'] for s in ex['steps'])
+  if ex.get('source_id'):
+   example=next(x for x in inventory if x['source_id']==ex['source_id'])
+   assert any(m['id']==c['id'] for m in (example['method'] or [])),(c['id'],ex['source_id'])
+   assert ex is not t['success'] or example['status']=='已有策略检验'
+  if ex.get('authored'):assert not ex.get('source_id')
 audit_by={x['source_id']:x for x in inventory}
 for x in reviews:
  for m in x['methods']:
