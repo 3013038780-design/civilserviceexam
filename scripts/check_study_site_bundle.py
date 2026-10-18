@@ -117,8 +117,13 @@ if 'strategyPracticeReview' in b:
  assert 'strategyPracticeReview' not in public and 'guided-transfer/v1' not in public
  guided={key:value for key,value in b['strategyPractice'].items() if value.get('mode')=='guided-transfer/v1'}
  expected_practice=json.loads(Path('本地资料/真题策略研究/资料分支_试用入口.json').read_text())
- assert guided==expected_practice
- assert b['strategyPracticeReview']==json.loads(Path('本地资料/真题策略研究/资料分支_试用核验.json').read_text())
+ definition_practice=json.loads(Path('本地资料/真题策略研究/定义样板_试用入口.json').read_text())
+ assert not set(expected_practice)&set(definition_practice)
+ assert guided=={**expected_practice,**definition_practice}
+ expected_review=json.loads(Path('本地资料/真题策略研究/资料分支_试用核验.json').read_text())
+ definition_review=json.loads(Path('本地资料/真题策略研究/定义分支_试用核验.json').read_text())
+ assert not set(expected_review)&set(definition_review)
+ assert b['strategyPracticeReview']=={**expected_review,**definition_review}
  assert all('answer' not in q and 'execution' not in q for group in guided.values() for q in group['questions'])
 print(json.dumps({'lazy_original_images':len(original_images),'every_review_has_original_pages':True},ensure_ascii=False))
 

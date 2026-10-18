@@ -125,6 +125,15 @@ if data_practice_path.exists():
  import base64
  data_practice=read(data_practice_path);practice_review=read(R/'资料分支_试用核验.json')
  crops={x['source_id']:x for x in read(R/'资料分支_试用裁片来源.json')['cases']}
+ assert not set(data_practice)&set(practice)
+ data_practice={**data_practice,**practice}
+ definition_review=read(R/'定义分支_试用核验.json')
+ assert not set(practice_review)&set(definition_review)
+ practice_review={**practice_review,**definition_review}
+ crops.update({x['source_id']:x for x in read(R/'定义分支_试用裁片来源.json')['cases']})
+ legacy=read(R/'定义试用_旧六题保护.json')
+ assert len(legacy)==6
+ assert set(legacy)<={q['source_id'] for g in practice.values() for q in g['questions']}
  for method,group in data_practice.items():
   assert by[method].get('teaching') and group['mode']=='guided-transfer/v1' and 3<=len(group['questions'])<=5
   assert len({q['source_id'] for q in group['questions']})==len(group['questions'])
@@ -183,10 +192,14 @@ if data_practice_path.exists():
    assert answer['review_id']=='review-'+hashlib.sha256(q['source_id'].encode()).hexdigest()[:14]
    raw=base64.b64decode(q['image'].split(',',1)[1]);crop=crops[q['source_id']]
    assert hashlib.sha256(raw).hexdigest()==crop['jpeg_sha256'] and len(raw)==crop['image_bytes']
-   assert q['pages']==sorted({r['page'] for r in crop['regions']})
+   if crop.get('origin')=='existing-private-practice':
+    assert q['source_id'] in legacy and q['pages']==legacy[q['source_id']]['pages']==crop['pages']
+    assert crop['jpeg_sha256']==legacy[q['source_id']]['jpeg_sha256']
+   else:
+    assert q['pages']==sorted({r['page'] for r in crop['regions']})
 
-assert set(practice)=={'definition-conditions','definition-relations'}
+assert set(practice)=={'definition-conditions','definition-relations','given-rules','procedure','visual-description'}
 for group in practice.values():
  assert len(group['questions'])==3
- assert all(set(q)=={'source_id','label','pages','image'} and q['image'].startswith('data:image/jpeg;base64,') for q in group['questions'])
+ assert group['mode']=='guided-transfer/v1' and all(set(q)=={'source_id','label','pages','image','hint'} and q['image'].startswith('data:image/jpeg;base64,') for q in group['questions'])
 print(json.dumps({'units':50,'indexed_positions':len(inventory),'reviewed_definition_positions':sum(audit_by[sid]['category']=='定义判断' for sid in reviewed),'reviewed_by_category':dict(collections.Counter(audit_by[sid]['category'] for sid in reviewed)),'old80_assessment':dict(collections.Counter(x['assessment'] for x in reviews)),'review_states':dict(collections.Counter(x['status'] for x in inventory if x['method'])),'visual_branches':sum('teaching' in c for c in cards),'auto_read_or_validation_promotion':False},ensure_ascii=False))
