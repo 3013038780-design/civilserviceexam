@@ -20,7 +20,14 @@ reviewed={x['source_id'] for x in reviews}
 latest_reviews={x['source_id']:x for x in reviews}
 for p in R.glob('*策略检验_*.json'):reviewed.update(x['source_id'] for x in read(p)['cases'])
 for p in sorted(R.glob('*策略检验_*.json'),key=lambda path:read(path).get('saved_at','')):
- for case in read(p)['cases']:latest_reviews[case['source_id']]=case
+ for case in read(p)['cases']:
+  revision=case.get('classification_revision')
+  if revision:
+   prior=next(x for x in read(R/revision['prior_evidence'])['cases'] if x['source_id']==case['source_id'])
+   assert revision['from_methods']==prior['methods']
+   for field in ['actual_task','first_answer','reference','working_answer','letter_match','execution','inventory_status','issues']:
+    assert case.get(field)==prior.get(field),(case['source_id'],field)
+  latest_reviews[case['source_id']]=case
 for x in inventory:
  if x['status'] in ['已有策略检验','存在争议']:
   assert x['source_id'] in reviewed and x['method'] and x['decisive_basis']
@@ -43,7 +50,7 @@ for c in cards:
  ids={x['id'] for x in t['flow']};assert len(ids)==len(t['flow'])
  for node in t['flow']:
   assert node['question'] and node['choices']
-  for edge in node['choices']:assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支（教学待补）']
+  for edge in node['choices']:assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支']
  for ex in [t['success'],t['failure']]:
   assert all(s['node'] in ids and s['text'] for s in ex['steps'])
 audit_by={x['source_id']:x for x in inventory}
