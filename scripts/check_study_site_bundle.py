@@ -1,7 +1,22 @@
 """Verify private build provenance and immutable first answers; copy validated output to the private checkout."""
-import hashlib,json,re,shutil
+import base64,copy,hashlib,json,re,shutil
 from pathlib import Path
 r=Path('本地作答/学习网站');p=r/'preview';b=json.loads((r/'公考学习资料包.json').read_text());old=Path('本地资料/网站发布/dist/index.html').read_text();ob=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',old,re.S)[1]);assert len(b['xingce'])==len(ob['xingce'])==135
+def restore_paper_images(payload,folder):
+ restored=copy.deepcopy(payload)
+ def restore(value):
+  if value.startswith('data:'):return value
+  assert re.fullmatch(r'paper-images/[a-f0-9]{24}\.jpg',value),value
+  raw=(folder/value).read_bytes()
+  assert hashlib.sha256(raw).hexdigest()[:24]==Path(value).stem
+  return 'data:image/jpeg;base64,'+base64.b64encode(raw).decode()
+ restored['paper']['pages']=[restore(value) for value in restored['paper']['pages']]
+ for question in restored['xingce']:
+  for field in ['questionImage','contextImage']:
+   if question.get(field):question[field]=restore(question[field])
+ return restored
+# Compare immutable records after restoring storage representation only.
+ob=restore_paper_images(ob,Path('本地资料/网站发布/dist'))
 changes=[]
 for new,previous in zip(b['xingce'],ob['xingce']):
  assert new['题号']==previous['题号'] and new['首答']==previous['首答'] and new['机构参考']==previous['机构参考']
@@ -30,7 +45,15 @@ assert all(k in pages for v in cases.values() for k in v)
 
 # Hosted practice assets must preserve every original field and image byte.
 hosted=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',(p/'index.html').read_text(),re.S)[1])
-import copy
+restored_paper=restore_paper_images(hosted,p)
+assert restored_paper['xingce']==b['xingce'] and restored_paper['paper']==b['paper']
+assert len(hosted['paper']['pages'])==26
+# The portable edition keeps embedded images and the same complete bundle.
+portable_html=(r/'公考解题研习室.html').read_text()
+portable=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',portable_html,re.S)[1])
+assert portable==b and all(value.startswith('data:image/') for value in portable['paper']['pages'])
+del portable_html,portable
+print(json.dumps({'paper_pages':26,'question_crops':sum(bool(q.get('questionImage')) for q in hosted['xingce']),'shared_context_crops':len({q['contextImage'] for q in hosted['xingce'] if q.get('contextImage')}),'all_paper_bytes_preserved':True}))
 restored=copy.deepcopy(hosted.get('strategyPractice',{}));hosted_practice_assets=set()
 for key,group in restored.items():
  original_group=b['strategyPractice'][key]
@@ -49,6 +72,10 @@ dest=Path('本地资料/网站发布/dist')
 for f in dest.glob('strategy-evidence-*.js'):
  if not (p/f.name).exists():f.unlink()
 shutil.copytree(p,dest,dirs_exist_ok=True)
+for dirname in ['paper-images','practice-images','strategy-pages']:
+ if (dest/dirname).exists():
+  for file in (dest/dirname).iterdir():
+   if file.is_file() and not (p/dirname/file.name).exists():file.unlink()
 print(json.dumps({'cards':len(branches),'pages':len(pages),'chunks':len(list(p.glob('strategy-evidence-*.js'))),'original135_first_answers_unchanged':True,'teaching_corrections':changes,'references_closed':True,'all_files_under_25MiB':True},ensure_ascii=False))
 
 # Cross-year review records must match the actual inventory, including disputes.

@@ -207,6 +207,21 @@ def main():
  # The portable single-file edition above retains the complete bundle.
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
  hosted_bundle=copy.deepcopy(hosted_bundle)
+ # Reuse exact bytes for 2026 pages/crops; shared context images get one asset.
+ # Portable HTML and import JSON above remain fully self-contained.
+ paper_images=local/'paper-images';paper_images.mkdir(exist_ok=True)
+ used_paper_images=set()
+ def externalize_paper_image(value):
+  match=re.fullmatch(r'data:image/jpeg;base64,([A-Za-z0-9+/=]+)',value);assert match
+  raw=base64.b64decode(match[1]);name=hashlib.sha256(raw).hexdigest()[:24]+'.jpg'
+  (paper_images/name).write_bytes(raw);used_paper_images.add(name)
+  return 'paper-images/'+name
+ hosted_bundle['paper']['pages']=[externalize_paper_image(value) for value in hosted_bundle['paper']['pages']]
+ for question in hosted_bundle['xingce']:
+  for field in ['questionImage','contextImage']:
+   if question.get(field):question[field]=externalize_paper_image(question[field])
+ for stale in paper_images.iterdir():
+  if stale.name not in used_paper_images:stale.unlink()
  # Exact existing bytes, loaded on demand; portable/import bundles stay embedded.
  practice_images=local/'practice-images';practice_images.mkdir(exist_ok=True)
  used_practice_images=set()
