@@ -43,6 +43,11 @@ for x in reviews:
   if m['version']!=by[m['id']]['version']:assert audit_by[x['source_id']]['status']=='需要回查' or all(by[z['id']]['version']==z['version'] for z in audit_by[x['source_id']]['method'])
 
 practice=read(R/'定义样板_试用入口.json')
+next_batch=read(R/'策略下一批.json')
+expected_discovery={u['id'] for u in cat if not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in inventory)}
+assert {u['unit_id'] for u in next_batch['discovery_units']}==expected_discovery
+if not next_batch['items'] and expected_discovery:
+ assert next_batch['stage']=='读取并分流尚未登记定义的来源'
 assert set(practice)=={'definition-conditions','definition-relations'}
 for group in practice.values():
  assert len(group['questions'])==3
