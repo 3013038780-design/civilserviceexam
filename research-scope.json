@@ -1,0 +1,6 @@
+{
+  "minimum_year_inclusive": 2010,
+  "preserve_historical_catalog_and_completed_records": true,
+  "allow_existing_record_dependency_rechecks": true,
+  "instruction": "2026-10-18用户要求：尚未分析的题目只做到2010年，含2010，不再向前追溯。已完成早期成果保留，范围外未分析题不标完成。"
+}

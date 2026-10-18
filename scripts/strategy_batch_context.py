@@ -6,6 +6,7 @@ excluded; output is a locator, not an assertion of reading or strategy validity.
 from pathlib import Path
 import argparse
 import json
+from research_scope import can_schedule, MINIMUM_YEAR
 
 ROOT = Path(__file__).resolve().parents[1]
 LOCAL = ROOT / '本地资料/真题策略研究'
@@ -40,6 +41,9 @@ if args.unit:
     items = [x for x in inventory
              if x['unit_id'] == args.unit and x['category'] == category]
     queue_source = '--unit'
+rejected=[x['source_id'] for x in items if not can_schedule(x)]
+if rejected:
+    raise ValueError('续接题单超出当前年份范围（'+str(MINIMUM_YEAR)+'年起）：'+', '.join(rejected))
 print(json.dumps({'queue_source': queue_source, 'category': category, 'items': len(items)}, ensure_ascii=False))
 source_records = {}
 linked_review_cache = {}

@@ -3,6 +3,7 @@ from pathlib import Path
 import collections,hashlib,json
 from definition_source_checks import load_no_definition_inspections
 from data_source_checks import load_no_data_inspections
+from research_scope import MINIMUM_YEAR, in_current_scope, can_schedule
 ROOT=Path(__file__).resolve().parents[1];R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 for name in ['策略实施_首答保护哈希.json','策略实施_新增首答保护哈希.json']:
@@ -78,7 +79,7 @@ no_definition=load_no_definition_inspections(R,cat)
 for unit_id in no_definition:
  assert not any(x['unit_id']==unit_id and x['category']=='定义判断' for x in inventory),unit_id
 assert {u['unit_id'] for u in next_batch.get('no_definition_inspections',[])}==set(no_definition)
-expected_discovery={u['id'] for u in cat if u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in inventory)}
+expected_discovery={u['id'] for u in cat if in_current_scope(u['year']) and u['id'] not in no_definition and not any(x['unit_id']==u['id'] and x['category']=='定义判断' for x in inventory)}
 assert {u['unit_id'] for u in next_batch['discovery_units']}==expected_discovery
 if next_batch.get('category')=='定义判断' and not next_batch['items'] and expected_discovery:
  assert next_batch['stage']=='读取并分流尚未登记定义的来源'
@@ -95,8 +96,8 @@ if next_batch.get('category') in ['资料分析','中心句与排序']:
   assert check['status']=='实际检查未见资料分析' and check['questions']==[]
   assert not next(x for x in scope if x['unit_id']==uid)['needs_actual_section_reading']
  assert len(scope)==len(cat) and {x['unit_id'] for x in scope}=={x['id'] for x in cat}
- pending_sections=next_batch['category_discovery_units'] if next_batch['category']=='资料分析' else [x for x in scope if x['needs_actual_section_reading']]
- assert {x['unit_id'] for x in pending_sections}=={x['unit_id'] for x in scope if x['needs_actual_section_reading']}
+ pending_sections=next_batch['category_discovery_units'] if next_batch['category']=='资料分析' else [x for x in scope if x['needs_actual_section_reading'] and x.get('in_current_scope',True)]
+ assert {x['unit_id'] for x in pending_sections}=={x['unit_id'] for x in scope if x['needs_actual_section_reading'] and x.get('in_current_scope',True)}
  if next_batch['category']=='资料分析' and not next_batch['items']:
   assert next_batch['stage']==('读取并分流尚未覆盖的资料段' if pending_sections else '资料已读队列清空，待全量范围验收')
  audit=read(R/'定义覆盖验收.json')
@@ -108,7 +109,7 @@ if next_batch.get('category')=='中心句与排序':
  assert len(scope)==50 and {x['unit_id'] for x in scope}=={x['id'] for x in cat}
  assert next_batch['batch_kind']=='已读候选；执行前核共享材料，题组不得拆开'
  assert all(audit_by[x['source_id']]['category']=='中心句与排序' for x in next_batch['items'])
- assert {x['unit_id'] for x in next_batch['category_discovery_units']}=={x['unit_id'] for x in scope if x['needs_actual_section_reading']}
+ assert {x['unit_id'] for x in next_batch['category_discovery_units']}=={x['unit_id'] for x in scope if x['needs_actual_section_reading'] and x.get('in_current_scope',True)}
 data_audit_path=R/'资料覆盖验收.json'
 if data_audit_path.exists():
  data_audit=read(data_audit_path)
@@ -270,3 +271,8 @@ if candidate_path.exists():
     assert c['inventory_status']==('已有策略检验' if prior['assessment']=='候选新版可执行' else '存在争议')
     assert audit_by[c['source_id']]['status']==c['inventory_status']
   print(json.dumps({'main_claim_candidate':version,'adopted':candidate['adopted'],'rechecked_candidates':len(complete),'pending_candidates':len(pending),'routed_other_tasks':len(routed),'current_rule_matches_adoption_state':True},ensure_ascii=False))
+
+assert next_batch["minimum_year_inclusive"]==MINIMUM_YEAR
+assert all(can_schedule(audit_by[x["source_id"]]) for x in next_batch["items"])
+assert all(in_current_scope(next(u["year"] for u in cat if u["id"]==x["unit_id"])) for x in next_batch["category_discovery_units"])
+print("year boundary: future queues respect cutoff; historical records retained")
