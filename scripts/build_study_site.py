@@ -226,8 +226,14 @@ def main():
  hosted_public['crossYearNoteSources']=[[n['methods'][0]['id'],int(n['id'].rsplit('-',1)[1]),n['years']] for n in public['crossYearNotes']]
  del hosted_public['crossYearNotes']
  hydrate_notes="""\n(()=>{const p=window.STUDY_PUBLIC,cards=new Map(p.strategyCards.map(c=>[c.id,c]));p.crossYearNotes=p.crossYearNoteSources.map(([id,i,years])=>{const c=cards.get(id),execution=c.worked.split(/\\n\\s*\\n/)[i],prefix=execution.split('：',1)[0];return {id:`note-${id}-${i}`,kind:'note',category:c.category,year:years[0],years,title:[...prefix].length<85?prefix:`${years[0]}年 · ${c.title}`,execution,methods:[{id:c.id,version:c.version}],status:'已整理示范；此类别全量检验未完成'};});delete p.crossYearNoteSources;})();\n"""
- packed_public=base64.b64encode(gzip.compress(json_script(hosted_public).encode(),mtime=0)).decode()
- (local/'public-data.js').write_text("window.STUDY_PUBLIC_READY=(async()=>{const bytes=Uint8Array.from(atob('"+packed_public+"'),c=>c.charCodeAt(0));window.STUDY_PUBLIC=JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text());"+hydrate_notes+"})();\n")
+ # Keep the same gzip bytes in a binary asset instead of inflating them by
+ # one third with base64. The portable edition above stays self-contained.
+ packed_public=gzip.compress(json_script(hosted_public).encode(),mtime=0)
+ public_asset='public-content-'+hashlib.sha256(packed_public).hexdigest()[:16]+'.bin'
+ (local/public_asset).write_bytes(packed_public)
+ for obsolete in local.glob('public-content-*.bin'):
+  if obsolete.name!=public_asset:obsolete.unlink()
+ (local/'public-data.js').write_text("window.STUDY_PUBLIC_READY=(async()=>{const response=await fetch('"+public_asset+"',{credentials:'same-origin'});if(!response.ok)throw new Error('教学数据加载失败：'+response.status);const bytes=await response.arrayBuffer();window.STUDY_PUBLIC=JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text());"+hydrate_notes+"})();\n")
  for name,source_paper in papers.items():
   target=local/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,target)
   portable=OUT/name;portable.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,portable)

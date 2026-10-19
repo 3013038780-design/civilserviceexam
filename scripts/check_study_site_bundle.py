@@ -103,7 +103,10 @@ public=(p/'public-data.js').read_text();assert 'crossYearExamples' not in public
 assert '看它怎样用于2026真题' not in (p/'app.js').read_text()
 print(json.dumps({'cross_year_records':len(examples),'disputes_preserved':sum(x['status']=='存在争议' for x in examples),'years':sorted({x['year'] for x in examples}),'original_pdfs':len({x['paper'] for x in examples}),'private_public_boundary':True},ensure_ascii=False))
 import subprocess
-hydrated_public=json.loads(subprocess.check_output(['node','-e',"global.window={};require(process.argv[1]);Promise.resolve(window.STUDY_PUBLIC_READY).then(()=>process.stdout.write(JSON.stringify(window.STUDY_PUBLIC)))",str((p/'public-data.js').resolve())],text=True))
+public_asset=re.search(r"fetch\('(public-content-[a-f0-9]{16}\.bin)'",public)[1]
+assert {f.name for f in p.glob('public-content-*.bin')}=={public_asset}
+assert hashlib.sha256((p/public_asset).read_bytes()).hexdigest()[:16] in public_asset
+hydrated_public=json.loads(subprocess.check_output(['node','-e',"global.window={};const fs=require('node:fs'),path=require('node:path');global.fetch=async name=>{if(!/^public-content-[a-f0-9]{16}\\.bin$/.test(name))throw Error('Unexpected asset');return new Response(fs.readFileSync(path.join(path.dirname(process.argv[1]),name)));};require(process.argv[1]);Promise.resolve(window.STUDY_PUBLIC_READY).then(()=>process.stdout.write(JSON.stringify(window.STUDY_PUBLIC)))",str((p/'public-data.js').resolve())],text=True))
 public=json.dumps(hydrated_public,ensure_ascii=False)
 assert 'crossYearExamples' not in hydrated_public and 'strategyPracticeReview' not in hydrated_public
 assert 'cross-year-papers/' not in public and 'guided-transfer/v1' not in public

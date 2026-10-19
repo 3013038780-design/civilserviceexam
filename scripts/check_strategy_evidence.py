@@ -190,7 +190,13 @@ if data_practice_path.exists():
     assert proof['kind']==answer['kind']=='self-authored'
     assert proof['answer']==answer['answer'] and proof['questionText']==q['questionText'] and proof['execution']==answer['execution']
     assert answer['proof_id']==q['source_id'] and q['source_id'] not in audit_by
-    if proof.get('proof_type')=='mixed-current':
+    if proof.get('proof_type')=='keyword-coverage':
+     # Consistency/provenance only: the semantic judgement is the saved
+     # human-readable assessment, not a score inferred by this checker.
+     assert method=='keyword-relations'
+     assert set(proof['comparison'])==set('ABCD')
+     assert all(proof['comparison'].values()) and proof['assessment']
+    elif proof.get('proof_type')=='mixed-current':
      a,b,total_rate=(Fraction(proof['givens'][k]) for k in ['a','b','R'])
      w=Fraction(proof['base_share']);v=Fraction(proof['current_share'])
      assert a!=b and 0<w<1 and 1+total_rate>0
