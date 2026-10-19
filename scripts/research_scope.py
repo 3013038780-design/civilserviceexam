@@ -1,4 +1,4 @@
-"""Shared year boundary for future work; historical evidence is never deleted."""
+"""Shared year and active-category boundaries; historical evidence is never deleted."""
 import json
 from pathlib import Path
 
@@ -13,6 +13,9 @@ def in_current_scope(year):
 
 
 def can_schedule(item):
+    active = POLICY.get('active_categories')
+    if active is not None and item.get('category', item.get('queue_category')) not in active:
+        return False
     return in_current_scope(item['year']) or (
         POLICY['allow_existing_record_dependency_rechecks']
         and item.get('status') == '需要回查'

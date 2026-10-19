@@ -3,7 +3,7 @@ from pathlib import Path
 import json,re,unicodedata,hashlib,collections,datetime
 from definition_source_checks import load_no_definition_inspections
 from data_source_checks import load_no_data_inspections
-from research_scope import MINIMUM_YEAR, in_current_scope, can_schedule
+from research_scope import MINIMUM_YEAR, in_current_scope, can_schedule, POLICY
 ROOT=Path(__file__).resolve().parents[1]; R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 def write(p,d):
@@ -141,6 +141,8 @@ if definition_finished:
 # coverage and the completed teaching unit have evidence. Empty queues alone
 # never advance the research sequence.
 requested=read(R/'续接检查点.json').get('next_batch',{}).get('category')
+if requested and POLICY.get('active_categories') is not None:
+ assert requested in POLICY['active_categories'], '续接类别已被当前阶段暂停：'+requested
 if requested=='中心句与排序':
  assert definition_finished
  data_coverage=read(R/'资料覆盖验收.json')
@@ -151,6 +153,8 @@ if requested=='中心句与排序':
  teaching=read(R/'资料教学_15分支语义与来源核对.json')
  assert len(teaching['branches'])==15 and teaching.get('deployment')
  assert {x['id'] for x in teaching['branches']}=={c['id'] for c in cards if c['category']=='data'}
+ category=requested
+if requested and requested in POLICY.get('active_categories',[]) and requested!='中心句与排序':
  category=requested
 # Already-read positions first, year descending, catalogue order.
 xs=[x for x in items if x['category']==category and x['status'] in ['已读待策略检验','需要回查'] and can_schedule(x)];xs.sort(key=lambda x:(0 if x['status']=='需要回查' else 1,-x['year'],order[x['unit_id']],x['question']))
@@ -215,6 +219,8 @@ print(json.dumps({'units':len(summary),'positions':len(items),'states':dict(coll
 active=[x for x in items if in_current_scope(x["year"])]
 legacy=[x for x in items if not in_current_scope(x["year"])]
 scope_stats={"minimum_year_inclusive":MINIMUM_YEAR,"current_units":sum(in_current_scope(u["year"]) for u in cat),"historical_units_retained":sum(not in_current_scope(u["year"]) for u in cat),"current_positions":len(active),"current_states":dict(collections.Counter(x["status"] for x in active)),"historical_reviewed_retained":sum(bool(x["method"]) for x in legacy),"historical_unreviewed_not_scheduled":sum(not x["method"] for x in legacy),"current_by_category":{k:dict(collections.Counter(x["status"] for x in active if x["category"]==k)) for k in sorted({x["category"] for x in active})}}
+phase_items=[x for x in active if x['category'] in POLICY.get('active_categories',[])]
+scope_stats['active_phase']={'name':POLICY.get('active_phase'),'categories':POLICY.get('active_categories',[]),'known_positions':len(phase_items),'reviewed_positions':sum(bool(x['method']) for x in phase_items),'pending_positions':sum(not x['method'] for x in phase_items),'unclassified_positions_not_assigned':sum(x['category']=='待人工分流' for x in active),'note':'当前两模块范围统计；不将暂停类别当已完成，不把未知位置全部计为当前模块。'}
 for name in ["策略检验盘点汇总.json","策略下一批.json"]:
  value=read(R/name);value["research_scope"]=scope_stats;write(R/name,value)
 print(json.dumps({"research_scope":scope_stats},ensure_ascii=False))

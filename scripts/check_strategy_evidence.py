@@ -3,7 +3,7 @@ from pathlib import Path
 import collections,hashlib,json
 from definition_source_checks import load_no_definition_inspections
 from data_source_checks import load_no_data_inspections
-from research_scope import MINIMUM_YEAR, in_current_scope, can_schedule
+from research_scope import MINIMUM_YEAR, in_current_scope, can_schedule, POLICY
 ROOT=Path(__file__).resolve().parents[1];R=ROOT/'本地资料/真题策略研究'
 def read(p):return json.loads(p.read_text())
 for name in ['策略实施_首答保护哈希.json','策略实施_新增首答保护哈希.json']:
@@ -296,4 +296,9 @@ if candidate_path.exists():
 assert next_batch["minimum_year_inclusive"]==MINIMUM_YEAR
 assert all(can_schedule(audit_by[x["source_id"]]) for x in next_batch["items"])
 assert all(in_current_scope(next(u["year"] for u in cat if u["id"]==x["unit_id"])) for x in next_batch["category_discovery_units"])
-print("year boundary: future queues respect cutoff; historical records retained")
+for category in POLICY.get('active_categories',[]):
+ assert can_schedule({'year':MINIMUM_YEAR,'category':category})
+ assert not can_schedule({'year':MINIMUM_YEAR-1,'category':category})
+for category in POLICY.get('deferred_categories',[])+POLICY.get('paused_specialties',[]):
+ assert not can_schedule({'year':MINIMUM_YEAR,'category':category})
+print("phase and year boundaries: future queues respect active categories and cutoff; historical records retained")

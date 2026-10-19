@@ -2,5 +2,33 @@
   "minimum_year_inclusive": 2010,
   "preserve_historical_catalog_and_completed_records": true,
   "allow_existing_record_dependency_rechecks": true,
-  "instruction": "2026-10-18用户要求：尚未分析的题目只做到2010年，含2010，不再向前追溯。已完成早期成果保留，范围外未分析题不标完成。"
+  "instruction": "2026-10-18用户要求：尚未分析的题目只做到2010年，含2010，不再向前追溯。已完成早期成果保留，范围外未分析题不标完成。 2026-10-19用户要求：先只做言语理解、判断推理，完成两块后再议其他；图推沿用暂缓专项。已有其他类别成果保留，不删除、不重算完成。",
+  "active_phase": "先完成言语理解与判断推理",
+  "active_categories": [
+    "中心句与排序",
+    "阅读理解",
+    "选词填空",
+    "定义判断",
+    "逻辑判断",
+    "类比推理"
+  ],
+  "deferred_categories": [
+    "资料分析",
+    "政治理论",
+    "常识判断",
+    "政治与常识待细分",
+    "申论"
+  ],
+  "paused_specialties": [
+    "数量关系",
+    "图形推理"
+  ],
+  "category_sequence": [
+    "中心句与排序",
+    "阅读理解",
+    "选词填空",
+    "逻辑判断",
+    "类比推理"
+  ],
+  "cross_discipline_principle": "言语用条件、集合、因果、范围、反例核直觉；推理先保留语境与概念再形式化，最后回译检查。只采用题内有依据且能降低成本的动作，不强制数理化或文学化。"
 }

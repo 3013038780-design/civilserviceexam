@@ -43,7 +43,7 @@ if args.unit:
     queue_source = '--unit'
 rejected=[x['source_id'] for x in items if not can_schedule(x)]
 if rejected:
-    raise ValueError('续接题单超出当前年份范围（'+str(MINIMUM_YEAR)+'年起）：'+', '.join(rejected))
+    raise ValueError('续接题单超出当前阶段类别或年份范围（'+str(MINIMUM_YEAR)+'年起）：'+', '.join(rejected))
 print(json.dumps({'queue_source': queue_source, 'category': category, 'items': len(items)}, ensure_ascii=False))
 source_records = {}
 linked_review_cache = {}
