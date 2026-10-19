@@ -113,16 +113,25 @@ assert url_year_case['year']==2003 and 2016 not in url_year_case['years']
 assert all(any(x['category']==category for x in notes) for category in ['cloze','structure','reading','logic','analogy'])
 
 original_images=set()
+hosted_examples={x['source_id']:x for x in hosted['crossYearExamples']}
+assert hosted_examples.keys()=={x['source_id'] for x in examples}
 for x in examples:
+ hosted_example=hosted_examples[x['source_id']]
+ assert {k:v for k,v in hosted_example.items() if k!='pageImages'}=={k:v for k,v in x.items() if k!='pageImages'}
  if x.get('originalMode')=='pdf':
   assert x['category']=='structure' and x['pages'] and x['pageImages']==[]
   assert (p/x['paper']).is_file() and (dest/x['paper']).is_file()
   continue
  assert [v['page'] for v in x['pageImages']]==x['pages'] and x['pageImages']
- for image in x['pageImages']:
+ assert len(hosted_example['pageImages'])==len(x['pageImages'])
+ for image,hosted_image in zip(x['pageImages'],hosted_example['pageImages']):
   assert image['image']==f"cross-year-pages/{Path(x['paper']).stem}-{image['page']}.jpg"
-  assert (p/image['image']).is_file() and (dest/image['image']).is_file()
-  original_images.add(image['image'])
+  assert hosted_image['page']==image['page'] and re.fullmatch(r'cross-year-pages/[a-f0-9]{16}-[0-9]+\.jpg',hosted_image['image'])
+  # The portable source path remains the independent byte-level oracle.
+  original_raw=(r/image['image']).read_bytes()
+  assert (p/hosted_image['image']).read_bytes()==original_raw
+  assert (dest/hosted_image['image']).read_bytes()==original_raw
+  original_images.add(hosted_image['image'])
 from PIL import Image
 for name in original_images:
  with Image.open(p/name) as im:assert im.format=='JPEG' and max(im.size)==2000

@@ -239,6 +239,20 @@ def main():
  # The portable single-file edition above retains the complete bundle.
  hosted_bundle={k:v for k,v in b.items() if k!='strategyEvidence'}
  hosted_bundle=copy.deepcopy(hosted_bundle)
+ # Different source PDFs can contain a byte-identical rendered page. Share
+ # only exact bytes in hosting; keep portable source/page paths unchanged.
+ canonical_pages={};page_aliases={}
+ for name in sorted(page_jobs):
+  digest=hashlib.sha256((OUT/name).read_bytes()).hexdigest()
+  canonical=canonical_pages.setdefault(digest,name)
+  page_aliases[name]=canonical
+ for example in hosted_bundle.get('crossYearExamples',[]):
+  for page in example.get('pageImages',[]):
+   page['image']=page_aliases[page['image']]
+ for original,canonical in page_aliases.items():
+  if original!=canonical:
+   assert (local/original).read_bytes()==(local/canonical).read_bytes()
+   (local/original).unlink()
  # Reuse exact bytes for 2026 pages/crops; shared context images get one asset.
  # Portable HTML and import JSON above remain fully self-contained.
  paper_images=local/'paper-images';paper_images.mkdir(exist_ok=True)
