@@ -1,5 +1,6 @@
 'use strict';
-(() => {
+(async () => {
+  await window.STUDY_PUBLIC_READY;
   const $ = (s, r = document) => r.querySelector(s);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const PUBLIC = window.STUDY_PUBLIC || {docs:[],assets:{}};
@@ -102,7 +103,7 @@
     const section=detail.closest('.practice-question'),branch=section.dataset.practiceBranch,sid=section.dataset.practiceSource,kind=detail.dataset.practiceReveal;
     savePractice(section,kind);const body=$('.practice-reveal-body',detail);
     if(kind==='hint'){const q=bundle?.strategyPractice?.[branch]?.questions.find(q=>q.source_id===sid);body.textContent=q?.hint||'先核题目问什么，再选方法。';}
-    else{const v=bundle?.strategyPracticeReview?.[branch]?.[sid];body.innerHTML=v?`<p>核验答案：<strong>${esc(v.answer)}</strong></p><p>${esc(v.execution)}</p>${v.kind==='self-authored'?'<p class="subtle">助手自拟迁移题，用于检验规则边界，不计真题覆盖。</p>':`<a class="paper-link" href="#/example/${esc(v.review_id)}">查看原首答与核验范围 →</a>`}`:'<p>本题核验尚未接入。</p>';}
+    else{const v=bundle?.strategyPracticeReview?.[branch]?.[sid];body.innerHTML=v?`<p>核验答案：<strong>${esc(v.answer)}</strong></p><p>${esc(v.teaching_execution||v.execution)}</p>${v.kind==='self-authored'?'<p class="subtle">助手自拟迁移题，用于检验规则边界，不计真题覆盖。</p>':`<a class="paper-link" href="#/example/${esc(v.review_id)}">查看原首答与核验范围 →</a>`}`:'<p>本题核验尚未接入。</p>';}
   },true);
   function strategyPractice(c){
     const p=bundle?.strategyPractice?.[c.id];if(!p||!Array.isArray(p.questions))return '';
@@ -222,6 +223,7 @@
   function renderMethods(){
     const entries=PUBLIC.methods||[],chosen=entries.find(c=>c.id===route().id);
     let html=banner('分类方法 / 从单题走向可重复的判断','先学一类的方法，再看它怎样用于一道题。','每类按钮标明实际整理程度。跨年题例优先展示；2026整卷保留为另一条阅读入口。');
+    if(PUBLIC.researchScope?.active_phase)html+=`<p class="subtle">当前阶段：${esc(PUBLIC.researchScope.active_phase)}。图推暂缓专项；其他类别保留已有成果，暂停新增研究。</p>`;
     html+=`<div class="method-picker" aria-label="十一类方法目录">${entries.map(c=>`<button class="${chosen?.id===c.id?'active':''}" data-method="${c.id}">${esc(c.title)}<small>${esc(categoryCoverage(c))}</small></button>`).join('')}</div>`;
     if(!chosen){html+=`<section class="panel method-guide"><h2>从这里开始</h2><p>选择上面一个类别，每次只读一套流程。</p><p>先理解“为什么这样做”，再打开例题看具体应用。其他路径留到首选方法学懂之后。</p><button class="primary" data-method="data">先看资料分析：把公式讲成人话 →</button><p class="subtle">这里是可核查的教学策略，不是模型内部思考记录。通用不等于所有题目都套同一个公式。</p></section>`;}
     else{const c=chosen;html+=`<article class="panel method-guide"><div class="eyebrow">${esc(categoryCoverage(c))}</div><h2>${esc(c.title)}</h2><p class="method-aim">${esc(c.aim)}</p>${crossYearEntry(c)}${taskMap(c)}${strategyCards(c.id)}${methodExamples(c)}${c.taskMap?'<details class="method-extra"><summary>查阅整类通用步骤</summary>':''}<h3>拿到题，先看哪里？</h3><p>${esc(c.read)}</p>${c.steps.map((s,i)=>`<section class="method-action"><div class="step-number">${i+1}</div><div><h3>${esc(s[0])}</h3><p>${esc(s[1])}</p><p class="method-why">为什么：${esc(s[2])}</p></div></section>`).join('')}<section class="stop-box"><h3>做到哪里可以停？</h3><p>${esc(c.stop)}</p></section><h3>用一个小例子理解</h3><p>${esc(c.example)}</p><details><summary>这一类还要怎样细分？</summary><ul>${c.branches.map(t=>`<li>${esc(t)}</li>`).join('')}</ul></details><details><summary>什么时候不能这样用？</summary><p>${esc(c.boundary)}</p></details>${c.taskMap?'</details>':''}<details class="same-paper-examples"><summary>另看2026副省级同卷示范</summary><div class="quick-picks">${c.questions.map(n=>`<button data-q="${n}" data-method-example>第 ${n} 题 →</button>`).join('')}</div></details>${c.source?`<details><summary>已读方法来源与借用范围</summary><p><a href="${esc(safeURL(c.source.url)||'#')}" target="_blank" rel="noopener noreferrer">${esc(c.source.title)} ↗</a></p><p>${esc(c.source.use)}</p></details>`:''}<p class="subtle">同卷例题用于示范；自拟例子用于理解。两者都不能证明你已经能独立迁移。本轮新增的整类流程也不继承原四张卡的跨卷验证结论。</p></article>`;}
@@ -244,5 +246,5 @@
   $('#export-notes').onclick=()=>{const b=new Blob([JSON.stringify({schema:'gongkao-notes/v1',exportedAt:new Date().toISOString(),favorites:records.favorites,notes:records.notes,practice:practiceRecords()},null,2)],{type:'application/json'});const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download='我的研习笔记.json';a.click();setTimeout(()=>URL.revokeObjectURL(u),1000);toast('已导出收藏与笔记；未包含原题。');};
   $('#font-smaller').onclick=()=>{records.font=Math.max(16,records.font-1);setFont();saveRecords();};$('#font-larger').onclick=()=>{records.font=Math.min(24,records.font+1);setFont();saveRecords();};$('#menu-button').onclick=()=>{const open=$('#sidebar').classList.toggle('open');$('#menu-button').setAttribute('aria-expanded',String(open));};$('#close-image').onclick=()=>$('#image-dialog').close();$('#image-dialog').onclick=e=>{if(e.target===$('#image-dialog'))$('#image-dialog').close();};
   window.addEventListener('hashchange',render);document.addEventListener('keydown',e=>{if(['INPUT','TEXTAREA','SELECT'].includes(e.target.tagName)||e.target.isContentEditable||$('#image-dialog').open)return;if(route().view==='xingce'&&bundle&&['ArrowLeft','ArrowRight'].includes(e.key)){e.preventDefault();neighbor(e.key==='ArrowLeft'?-1:1);}});
-  async function init(){try{const embedded=$('#study-bundle');if(embedded)bundle=validateBundle(JSON.parse(embedded.textContent));else{const old=await cachedBundle();if(old)bundle=validateBundle(old);}}catch{toast('本机资料未载入；可重新导入学习资料包。');}render();}init();
+  async function init(){try{const embedded=$('#study-bundle');if(embedded){let text=embedded.textContent;if(embedded.dataset.encoding==='gzip-base64'){const bytes=Uint8Array.from(atob(text),c=>c.charCodeAt(0));text=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text();}bundle=validateBundle(JSON.parse(text));}else{const old=await cachedBundle();if(old)bundle=validateBundle(old);}}catch{toast('本机资料未载入；可重新导入学习资料包。');}render();}init();
 })();

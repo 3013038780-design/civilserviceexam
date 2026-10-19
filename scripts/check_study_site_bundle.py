@@ -1,7 +1,13 @@
 """Verify private build provenance and immutable first answers; copy validated output to the private checkout."""
-import base64,copy,hashlib,json,re,shutil
+import base64,copy,gzip,hashlib,json,re,shutil
 from pathlib import Path
-r=Path('本地作答/学习网站');p=r/'preview';b=json.loads((r/'公考学习资料包.json').read_text());old=Path('本地资料/网站发布/dist/index.html').read_text();ob=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',old,re.S)[1]);assert len(b['xingce'])==len(ob['xingce'])==135
+def embedded_bundle(html):
+ match=re.search(r'<script id="study-bundle"([^>]*)>(.*?)</script>',html,re.S)
+ assert match
+ raw=match[2]
+ if 'data-encoding="gzip-base64"' in match[1]:raw=gzip.decompress(base64.b64decode(raw)).decode()
+ return json.loads(raw)
+r=Path('本地作答/学习网站');p=r/'preview';b=json.loads((r/'公考学习资料包.json').read_text());old=Path('本地资料/网站发布/dist/index.html').read_text();ob=embedded_bundle(old);assert len(b['xingce'])==len(ob['xingce'])==135
 def restore_paper_images(payload,folder):
  restored=copy.deepcopy(payload)
  def restore(value):
@@ -44,13 +50,13 @@ for key,page in pages.items():
 assert all(k in pages for v in cases.values() for k in v)
 
 # Hosted practice assets must preserve every original field and image byte.
-hosted=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',(p/'index.html').read_text(),re.S)[1])
+hosted=embedded_bundle((p/'index.html').read_text())
 restored_paper=restore_paper_images(hosted,p)
 assert restored_paper['xingce']==b['xingce'] and restored_paper['paper']==b['paper']
 assert len(hosted['paper']['pages'])==26
 # The portable edition keeps embedded images and the same complete bundle.
 portable_html=(r/'公考解题研习室.html').read_text()
-portable=json.loads(re.search(r'<script id="study-bundle" type="application/json">(.*?)</script>',portable_html,re.S)[1])
+portable=embedded_bundle(portable_html)
 assert portable==b and all(value.startswith('data:image/') for value in portable['paper']['pages'])
 del portable_html,portable
 print(json.dumps({'paper_pages':26,'question_crops':sum(bool(q.get('questionImage')) for q in hosted['xingce']),'shared_context_crops':len({q['contextImage'] for q in hosted['xingce'] if q.get('contextImage')}),'all_paper_bytes_preserved':True}))
@@ -97,7 +103,10 @@ public=(p/'public-data.js').read_text();assert 'crossYearExamples' not in public
 assert '看它怎样用于2026真题' not in (p/'app.js').read_text()
 print(json.dumps({'cross_year_records':len(examples),'disputes_preserved':sum(x['status']=='存在争议' for x in examples),'years':sorted({x['year'] for x in examples}),'original_pdfs':len({x['paper'] for x in examples}),'private_public_boundary':True},ensure_ascii=False))
 import subprocess
-hydrated_public=json.loads(subprocess.check_output(['node','-e',"global.window={};require(process.argv[1]);process.stdout.write(JSON.stringify(window.STUDY_PUBLIC))",str((p/'public-data.js').resolve())],text=True))
+hydrated_public=json.loads(subprocess.check_output(['node','-e',"global.window={};require(process.argv[1]);Promise.resolve(window.STUDY_PUBLIC_READY).then(()=>process.stdout.write(JSON.stringify(window.STUDY_PUBLIC)))",str((p/'public-data.js').resolve())],text=True))
+public=json.dumps(hydrated_public,ensure_ascii=False)
+assert 'crossYearExamples' not in hydrated_public and 'strategyPracticeReview' not in hydrated_public
+assert 'cross-year-papers/' not in public and 'guided-transfer/v1' not in public
 notes=hydrated_public['crossYearNotes']
 url_year_case=next(x for x in notes if x['title'].startswith('2003B85'))
 assert url_year_case['year']==2003 and 2016 not in url_year_case['years']
@@ -143,7 +152,7 @@ assert not (p/'content').exists() and not (dest/'content').exists()
 for runtime_file in ['index.html','app.js','app.css']:
  assert 'content/' not in (p/runtime_file).read_text()
 hosted_public_text=(p/'public-data.js').read_text()
-seed_public=json.loads(hosted_public_text.split('=',1)[1].split(';\n',1)[0])
+seed_public=hydrated_public
 assert seed_public['strategyCards']==json.loads(Path('web/content/xingce-branches.json').read_text())
 assert seed_public['methods']==json.loads(Path('web/content/xingce-methods.json').read_text())
 # Execute the shipped hydration and compare the entire object, including all notes.

@@ -52,7 +52,9 @@ for c in cards:
  for node in t['flow']:
   assert node['question'] and node['choices']
   for edge in node['choices']:
-   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支','转对应任务','转句子插入分支（待建）']
+   assert edge['to'] in ids or edge['to'] in ['完成','相对选择；复核保留争议','相对选择；保留竞争','转比重变化分支','转部分数量分支','转构成图或图表定位分支','转趋势图或构成图分支','转对应任务','转句子插入分支（待建）','转句子插入分支']
+   if edge['to']=='转句子插入分支':
+    assert c['id']=='sentence-role' and 'sentence-insertion' in t.get('related_methods',[])
    if edge['to']=='转句子插入分支（待建）':
     assert c['id']=='sentence-role' and '插入' in c['signal']
    if edge['to']=='转对应任务':

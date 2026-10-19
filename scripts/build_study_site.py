@@ -2,7 +2,7 @@
 Run with the bundled Python (Pillow, pdfplumber, pypdf). Private files stay ignored.
 """
 from pathlib import Path
-import argparse,base64,copy,hashlib,io,json,logging,re,shutil,subprocess
+import argparse,base64,copy,gzip,hashlib,io,json,logging,re,shutil,subprocess
 from concurrent.futures import ThreadPoolExecutor
 from PIL import Image
 import pdfplumber
@@ -226,7 +226,8 @@ def main():
  hosted_public['crossYearNoteSources']=[[n['methods'][0]['id'],int(n['id'].rsplit('-',1)[1]),n['years']] for n in public['crossYearNotes']]
  del hosted_public['crossYearNotes']
  hydrate_notes="""\n(()=>{const p=window.STUDY_PUBLIC,cards=new Map(p.strategyCards.map(c=>[c.id,c]));p.crossYearNotes=p.crossYearNoteSources.map(([id,i,years])=>{const c=cards.get(id),execution=c.worked.split(/\\n\\s*\\n/)[i],prefix=execution.split('：',1)[0];return {id:`note-${id}-${i}`,kind:'note',category:c.category,year:years[0],years,title:[...prefix].length<85?prefix:`${years[0]}年 · ${c.title}`,execution,methods:[{id:c.id,version:c.version}],status:'已整理示范；此类别全量检验未完成'};});delete p.crossYearNoteSources;})();\n"""
- (local/'public-data.js').write_text('window.STUDY_PUBLIC='+json_script(hosted_public)+';'+hydrate_notes)
+ packed_public=base64.b64encode(gzip.compress(json_script(hosted_public).encode(),mtime=0)).decode()
+ (local/'public-data.js').write_text("window.STUDY_PUBLIC_READY=(async()=>{const bytes=Uint8Array.from(atob('"+packed_public+"'),c=>c.charCodeAt(0));window.STUDY_PUBLIC=JSON.parse(await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream('gzip'))).text());"+hydrate_notes+"})();\n")
  for name,source_paper in papers.items():
   target=local/name;target.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,target)
   portable=OUT/name;portable.parent.mkdir(parents=True,exist_ok=True);shutil.copy2(source_paper,portable)
@@ -291,7 +292,8 @@ def main():
   init='window.STUDY_STRATEGY_EVIDENCE='+json_script({'pages':{},'cases':evidence_cases})+';\n' if i==0 else ''
   (local/name).write_text(init+'Object.assign(window.STUDY_STRATEGY_EVIDENCE.pages,'+json_script(pages)+');\n')
  scripts=''.join('<script src="'+name+'"></script>' for name in evidence_assets)
- preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/json">'+json_script(hosted_bundle)+'</script>'+scripts)
+ packed_bundle=base64.b64encode(gzip.compress(json_script(hosted_bundle).encode(),mtime=0)).decode()
+ preview=(WEB/'index.html').read_text().replace('<!-- STUDY_BUNDLE -->','<script id="study-bundle" type="application/octet-stream" data-encoding="gzip-base64">'+packed_bundle+'</script>'+scripts)
  # Content fingerprints prevent a refreshed page from reusing an older UI or method library.
  for asset in ['app.css','app.js','public-data.js']+evidence_assets:
   digest=hashlib.sha256((local/asset).read_bytes()).hexdigest()[:12]
