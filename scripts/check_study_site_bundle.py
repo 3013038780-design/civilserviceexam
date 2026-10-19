@@ -77,6 +77,8 @@ assert all(f.stat().st_size<25*1024*1024 for f in p.rglob('*') if f.is_file())
 dest=Path('本地资料/网站发布/dist')
 for f in dest.glob('strategy-evidence-*.js'):
  if not (p/f.name).exists():f.unlink()
+for f in dest.glob('public-content-*.bin'):
+ if not (p/f.name).exists():f.unlink()
 shutil.copytree(p,dest,dirs_exist_ok=True)
 shutil.rmtree(dest/'content',ignore_errors=True)
 for dirname in ['paper-images','practice-images','strategy-pages','cross-year-pages']:

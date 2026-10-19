@@ -233,12 +233,29 @@ if data_practice_path.exists():
      assert all(Fraction(m['T1'],m['A'])==Fraction(6,5) and Fraction(m['T2'],m['B'])==Fraction(3,2) for m in models)
      assert len({Fraction(m['B'],m['A']) for m in models})>1 and proof['answer']=='D'
     continue
-   assert set(q)=={'source_id','label','pages','image','hint'}
+   text_original='questionText' in q
+   assert set(q)==({'source_id','label','pages','questionText','paper','hint'} if text_original else {'source_id','label','pages','image','hint'})
    original=audit_by[q['source_id']]
    assert original['status']=='已有策略检验' and method in {m['id'] for m in original['method']}
    expected_answer=latest_reviews[q['source_id']].get('working_answer',original['first_answer']['answer'])
    assert answer['answer']==expected_answer and answer['execution']==original['decisive_basis']
    assert answer['review_id']=='review-'+hashlib.sha256(q['source_id'].encode()).hexdigest()[:14]
+   if text_original:
+    import fitz,re
+    proof=read(R/'文字试用_原页依据.json')[q['source_id']]
+    pdf=Path(proof['source_pdf']);digest=hashlib.sha256(pdf.read_bytes()).hexdigest()
+    assert digest==proof['source_pdf_sha256']
+    assert q['paper']==proof['paper']=='cross-year-papers/'+digest[:16]+'.pdf'
+    assert q['pages']==proof['pages']==original['pages']
+    assert hashlib.sha256(q['questionText'].encode()).hexdigest()==proof['text_sha256']
+    with fitz.open(pdf) as document:
+     raw='\n'.join(document[n-1].get_text(sort=True) for n in q['pages'])
+    number=int(q['source_id'].rsplit(':',1)[1])
+    start=re.search(rf'(?m)^\s*{number}[.、．]',raw);assert start
+    end=re.search(rf'(?m)^\s*{number+1}[.、．]',raw[start.end():])
+    assert q['questionText']==raw[start.start():start.end()+end.start() if end else len(raw)].strip()
+    assert all(re.search(rf'{letter}[.、．]',q['questionText']) for letter in 'ABCD')
+    continue
    raw=base64.b64decode(q['image'].split(',',1)[1]);crop=crops[q['source_id']]
    assert hashlib.sha256(raw).hexdigest()==crop['jpeg_sha256'] and len(raw)==crop['image_bytes']
    if crop.get('origin')=='existing-private-practice':
