@@ -7,10 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="#先看一个例子">看一个例子</a> ·
-  <a href="#已经整理出什么">看初步成果</a> ·
-  <a href="#从哪里开始">进入方法库</a> ·
-  <a href="https://gongkao-study-studio.easy-tern-3117.chatgpt.site/">私人学习网站</a>
+  <a href="https://github.com/3013038780-design/civilserviceexam/raw/refs/heads/main/%E4%BD%93%E9%AA%8C%E5%85%A5%E5%8F%A3.html">开始一轮练习（下载HTML）</a> · <a href="公开上手与项目完善说明.md">了解项目</a>
 </p>
 
 ---
@@ -21,11 +18,23 @@
 
 当前研究重点是言语理解与判断推理，新增题目以2010年及以后为范围。数量关系、图形推理暂缓专项。资料分析、申论等已有成果继续保留，暂不新增批量研究。
 
-## 第一次来，先试这份公开资料包
+## 先走完一次：看示范 → 自己做 → 核验 → 留下动作
 
-[下载AI考公资料包·完整阅读版v2](https://github.com/3013038780-design/Machine-Observer-WeChat-Official-Account/raw/refs/heads/main/articles/2026-10-ai-kaogong/assets/AI%E8%80%83%E5%85%AC%E8%B5%84%E6%96%99%E5%8C%85-%E5%AE%8C%E6%95%B4%E9%98%85%E8%AF%BB%E7%89%88-v2.zip)，解压后打开 **`00-从这里开始.html`**。零基础指引、七份预设、六张方法卡、三组真题示范与项目介绍，都在同一页；本页可离线阅读，不要求登录私人网站。
+[下载单文件体验入口](https://github.com/3013038780-design/civilserviceexam/raw/refs/heads/main/%E4%BD%93%E9%AA%8C%E5%85%A5%E5%8F%A3.html)，保存后用浏览器打开。默认只显示当前一步，其他研究资料收在底部。
 
-完整站点仍是私人访问。资料包是可公开阅读的教学起点，当前主攻分类和个人迁移效果仍有未完成项。详见[公开上手与项目完善说明](https://github.com/3013038780-design/civilserviceexam/blob/codex/corpus-strategies/公开上手与项目完善说明.md)。
+下文预测一份白话示范，接3道原创自拟练习：选择、依据、自填用时先保存，再展开核验，最后写下一题的动作，可导出JSON。无需登录、导入题库或配置AI。它用于体验方法，不是考场难度测评；个人效果仍待独立真题验证。
+
+<details>
+<summary>完整资料包、研究与私人网站入口</summary>
+
+[下载六部分资料包v2](https://github.com/3013038780-design/Machine-Observer-WeChat-Official-Account/raw/refs/heads/main/articles/2026-10-ai-kaogong/assets/AI%E8%80%83%E5%85%AC%E8%B5%84%E6%96%99%E5%8C%85-%E5%AE%8C%E6%95%B4%E9%98%85%E8%AF%BB%E7%89%88-v2.zip)，解压打开 `00-从这里开始.html`。含指引、七份预设、六张方法卡、三组真题与项目介绍。
+
+完整站点仍为私人访问。详见[项目现状与完善说明](公开上手与项目完善说明.md)。
+
+</details>
+
+<details>
+<summary><strong>展开完整分类成果、证据和维护说明</strong></summary>
 
 ## 先看一个例子
 
@@ -107,5 +116,7 @@ Skills 是方法与执行协议，由宿主 AI 读取；资料整理与规则迭
 - 可核查策略用于教学，不声称复现模型隐藏思考记录。
 - 第三方真题、课程、电子书与个人笔记只作私人研究，不随公开仓库分发；具体使用见[资料说明](https://github.com/3013038780-design/civilserviceexam/blob/codex/corpus-strategies/资料使用说明.md)。
 - 最新范围与工作顺序以研究分支 `AGENTS.md` 为准。历史“50单元”“44天”等是当时的目录或计划口径，不作当前完成率。
+
+</details>
 
 </details>
