@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/3013038780-design/civilserviceexam/raw/refs/heads/main/%E4%BD%93%E9%AA%8C%E5%85%A5%E5%8F%A3.html">开始一轮练习（下载HTML）</a> · <a href="公开上手与项目完善说明.md">了解项目</a>
+  <a href="https://github.com/3013038780-design/civilserviceexam/raw/refs/heads/codex/corpus-strategies/%E4%BD%93%E9%AA%8C%E5%85%A5%E5%8F%A3.html">开始一轮练习（下载HTML）</a> · <a href="公开上手与项目完善说明.md">了解项目</a>
 </p>
 
 ---
@@ -20,7 +20,7 @@
 
 ## 先走完一次：看示范 → 自己做 → 核验 → 留下动作
 
-[下载单文件体验入口](https://github.com/3013038780-design/civilserviceexam/raw/refs/heads/main/%E4%BD%93%E9%AA%8C%E5%85%A5%E5%8F%A3.html)，保存后用浏览器打开。默认只显示当前一步，其他研究资料收在底部。
+[下载单文件体验入口](https://github.com/3013038780-design/civilserviceexam/raw/refs/heads/codex/corpus-strategies/%E4%BD%93%E9%AA%8C%E5%85%A5%E5%8F%A3.html)，保存后用浏览器打开。默认只显示当前一步，其他研究资料收在底部。
 
 下文预测一份白话示范，接3道原创自拟练习：选择、依据、自填用时先保存，再展开核验，最后写下一题的动作，可导出JSON。无需登录、导入题库或配置AI。它用于体验方法，不是考场难度测评；个人效果仍待独立真题验证。
 
