@@ -1,0 +1,2 @@
+# Keep upstream PDF.js files byte-identical, including license whitespace.
+web/vendor/pdfjs/** -whitespace

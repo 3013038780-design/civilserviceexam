@@ -81,3 +81,8 @@
 | T | [HuaXiLF/shenlun-trainer](https://github.com/HuaXiLF/shenlun-trainer) | `567d0156ff6e350e8b432c82be71bbb503c0966b` |
 | K | [KeWang0622/kaogong-skill](https://github.com/KeWang0622/kaogong-skill) | `2af2115291bdd0f9973554e04102636f82984827` |
 | Q | [XiaoSiKe/qingan-initiative-civil-service-examination-sprint-coach](https://github.com/XiaoSiKe/qingan-initiative-civil-service-examination-sprint-coach) | `eaf90d7f0d97a17d5ad4d794d9ae09f6c97cfede` |
+
+- 主旨阅读跨年第一批：已读固定版本0405与0738，借用范围和链接见真题阅读与分类策略研究.md本批章节；不照收对策优先与强制结构命名。
+
+
+定义跨年补读：0974全文再次实际阅读，借必要条件与开放列举核对，不采用缺词必排、多项满足选最全面的硬规则。2007/2008二十题与失败边界已回写定义案例匹配卡；上游没有覆盖本项目首答冻结和证据分级约定。

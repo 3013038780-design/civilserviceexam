@@ -1,0 +1,216 @@
+"""Verify private build provenance and immutable first answers; copy validated output to the private checkout."""
+import base64,copy,gzip,hashlib,json,re,shutil
+from pathlib import Path
+def embedded_bundle(html):
+ match=re.search(r'<script id="study-bundle"([^>]*)>(.*?)</script>',html,re.S)
+ assert match
+ raw=match[2]
+ if 'data-encoding="gzip-base64"' in match[1]:raw=gzip.decompress(base64.b64decode(raw)).decode()
+ return json.loads(raw)
+r=Path('本地作答/学习网站');p=r/'preview';b=json.loads((r/'公考学习资料包.json').read_text());old=Path('本地资料/网站发布/dist/index.html').read_text();ob=embedded_bundle(old);assert len(b['xingce'])==len(ob['xingce'])==135
+def restore_paper_images(payload,folder):
+ restored=copy.deepcopy(payload)
+ def restore(value):
+  if value.startswith('data:'):return value
+  assert re.fullmatch(r'paper-images/[a-f0-9]{24}\.jpg',value),value
+  raw=(folder/value).read_bytes()
+  assert hashlib.sha256(raw).hexdigest()[:24]==Path(value).stem
+  return 'data:image/jpeg;base64,'+base64.b64encode(raw).decode()
+ restored['paper']['pages']=[restore(value) for value in restored['paper']['pages']]
+ for question in restored['xingce']:
+  for field in ['questionImage','contextImage']:
+   if question.get(field):question[field]=restore(question[field])
+ return restored
+# Compare immutable records after restoring storage representation only.
+ob=restore_paper_images(ob,Path('本地资料/网站发布/dist'))
+changes=[]
+for new,previous in zip(b['xingce'],ob['xingce']):
+ assert new['题号']==previous['题号'] and new['首答']==previous['首答'] and new['机构参考']==previous['机构参考']
+ if new!=previous:
+  assert new['题号']==96
+  fields={k for k in new if new.get(k)!=previous.get(k)}
+  assert fields <= {'教学路径','停止条件'}
+  if '停止条件' in fields:
+   assert previous['停止条件']=='一个符合定义的反例足以否定由定义推出该大小关系。'
+   assert new['停止条件']=='口径核对后，D的回报程度与通常大小关系缺少题内依据；与其余项比较后相对选择D并保留边界，不能凭一个反例就停止。'
+  changes.append(96)
+
+pages={};cases=None
+for f in sorted(p.glob('strategy-evidence-*.js'),key=lambda f:int(f.stem.split('-')[-1])):
+ t=f.read_text()
+ if t.startswith('window.STUDY_STRATEGY_EVIDENCE='): cases=json.loads(t.split('=',1)[1].split(';\n',1)[0])['cases']
+ q=json.loads(t.split('Object.assign(window.STUDY_STRATEGY_EVIDENCE.pages,',1)[1].rsplit(');',1)[0]);assert not pages.keys()&q.keys();pages.update(q)
+# Byte equality proves externalizing does not recompress or drop original pages.
+import base64
+assert pages.keys()==b['strategyEvidence']['pages'].keys() and cases==b['strategyEvidence']['cases']
+for key,page in pages.items():
+ original=b['strategyEvidence']['pages'][key]
+ assert page['label']==original['label'] and re.fullmatch(r'strategy-pages/[a-f0-9]{24}\.jpg',page['image'])
+ assert (p/page['image']).read_bytes()==base64.b64decode(original['image'].split(',',1)[1])
+assert all(k in pages for v in cases.values() for k in v)
+
+# Hosted practice assets must preserve every original field and image byte.
+hosted=embedded_bundle((p/'index.html').read_text())
+restored_paper=restore_paper_images(hosted,p)
+assert restored_paper['xingce']==b['xingce'] and restored_paper['paper']==b['paper']
+assert len(hosted['paper']['pages'])==26
+# The portable edition keeps embedded images and the same complete bundle.
+portable_html=(r/'公考解题研习室.html').read_text()
+portable=embedded_bundle(portable_html)
+assert portable==b and all(value.startswith('data:image/') for value in portable['paper']['pages'])
+del portable_html,portable
+print(json.dumps({'paper_pages':26,'question_crops':sum(bool(q.get('questionImage')) for q in hosted['xingce']),'shared_context_crops':len({q['contextImage'] for q in hosted['xingce'] if q.get('contextImage')}),'all_paper_bytes_preserved':True}))
+restored=copy.deepcopy(hosted.get('strategyPractice',{}));hosted_practice_assets=set()
+for key,group in restored.items():
+ original_group=b['strategyPractice'][key]
+ for q,original in zip(group['questions'],original_group['questions']):
+  if not original.get('image'):continue
+  name=q['image'];assert re.fullmatch(r'practice-images/[a-f0-9]{24}\.(jpg|png|webp)',name)
+  raw=base64.b64decode(original['image'].split(',',1)[1]);assert (p/name).read_bytes()==raw
+  assert Path(name).stem==hashlib.sha256(raw).hexdigest()[:24]
+  q['image']=original['image'];hosted_practice_assets.add(name)
+assert restored==b.get('strategyPractice',{})
+assert hosted.get('strategyPracticeReview')==b.get('strategyPracticeReview')
+print(json.dumps({'external_practice_images':len(hosted_practice_assets),'original_bytes_preserved':True}))
+branches=json.loads(Path('web/content/xingce-branches.json').read_text());assert branches and len(branches)==len({x['id'] for x in branches})
+assert all(f.stat().st_size<25*1024*1024 for f in p.rglob('*') if f.is_file())
+dest=Path('本地资料/网站发布/dist')
+for f in dest.glob('strategy-evidence-*.js'):
+ if not (p/f.name).exists():f.unlink()
+for f in dest.glob('public-content-*.bin'):
+ if not (p/f.name).exists():f.unlink()
+shutil.copytree(p,dest,dirs_exist_ok=True)
+shutil.rmtree(dest/'content',ignore_errors=True)
+for dirname in ['paper-images','practice-images','strategy-pages','cross-year-pages']:
+ if (dest/dirname).exists():
+  for file in (dest/dirname).iterdir():
+   if file.is_file() and not (p/dirname/file.name).exists():file.unlink()
+print(json.dumps({'cards':len(branches),'pages':len(pages),'chunks':len(list(p.glob('strategy-evidence-*.js'))),'original135_first_answers_unchanged':True,'teaching_corrections':changes,'references_closed':True,'all_files_under_25MiB':True},ensure_ascii=False))
+
+# Cross-year review records must match the actual inventory, including disputes.
+import hashlib
+inventory=json.loads(Path('本地资料/真题策略研究/逐题策略检验清单.json').read_text())['items']
+expected={x['source_id']:x for x in inventory if x['status'] in ['已有策略检验','存在争议'] and x['category'] in ['定义判断','资料分析','中心句与排序']}
+examples=b['crossYearExamples'];assert len(examples)==len({x['id'] for x in examples})==len(expected)
+assert {x['source_id'] for x in examples}==expected.keys()
+catalog={x['id']:x for x in json.loads(Path('本地资料/真题策略研究/主版本阅读目录.json').read_text())}
+for x in examples:
+ old=expected[x['source_id']];assert x['execution']==old['decisive_basis'] and x['status']==old['status'] and x['methods']==old['method']
+ assert x['year']==old['year'] and re.fullmatch(r'cross-year-papers/[a-f0-9]{16}\.pdf',x['paper'])
+ source=Path(catalog[old['unit_id']]['path']);assert hashlib.sha256((p/x['paper']).read_bytes()).digest()==hashlib.sha256(source.read_bytes()).digest()
+ page_count=len(json.loads((Path('本地资料/真题策略研究/抽取')/old['unit_id']/'pages.json').read_text()))
+ assert all(1<=page<=page_count for page in x['pages'])
+ assert (dest/x['paper']).exists()
+public=(p/'public-data.js').read_text();assert 'crossYearExamples' not in public and 'cross-year-papers/' not in public
+assert '看它怎样用于2026真题' not in (p/'app.js').read_text()
+print(json.dumps({'cross_year_records':len(examples),'disputes_preserved':sum(x['status']=='存在争议' for x in examples),'years':sorted({x['year'] for x in examples}),'original_pdfs':len({x['paper'] for x in examples}),'private_public_boundary':True},ensure_ascii=False))
+import subprocess
+public_asset=re.search(r"fetch\('(public-content-[a-f0-9]{16}\.bin)'",public)[1]
+assert {f.name for f in p.glob('public-content-*.bin')}=={public_asset}
+assert hashlib.sha256((p/public_asset).read_bytes()).hexdigest()[:16] in public_asset
+hydrated_public=json.loads(subprocess.check_output(['node','-e',"global.window={};const fs=require('node:fs'),path=require('node:path');global.fetch=async name=>{if(!/^public-content-[a-f0-9]{16}\\.bin$/.test(name))throw Error('Unexpected asset');return new Response(fs.readFileSync(path.join(path.dirname(process.argv[1]),name)));};require(process.argv[1]);Promise.resolve(window.STUDY_PUBLIC_READY).then(()=>process.stdout.write(JSON.stringify(window.STUDY_PUBLIC)))",str((p/'public-data.js').resolve())],text=True))
+public=json.dumps(hydrated_public,ensure_ascii=False)
+assert 'crossYearExamples' not in hydrated_public and 'strategyPracticeReview' not in hydrated_public
+assert 'cross-year-papers/' not in public and 'guided-transfer/v1' not in public
+notes=hydrated_public['crossYearNotes']
+url_year_case=next(x for x in notes if x['title'].startswith('2003B85'))
+assert url_year_case['year']==2003 and 2016 not in url_year_case['years']
+assert all(any(x['category']==category for x in notes) for category in ['cloze','structure','reading','logic','analogy'])
+
+original_images=set()
+hosted_examples={x['source_id']:x for x in hosted['crossYearExamples']}
+assert hosted_examples.keys()=={x['source_id'] for x in examples}
+for x in examples:
+ hosted_example=hosted_examples[x['source_id']]
+ assert {k:v for k,v in hosted_example.items() if k!='pageImages'}=={k:v for k,v in x.items() if k!='pageImages'}
+ if x.get('originalMode')=='pdf':
+  assert x['category']=='structure' and x['pages'] and x['pageImages']==[]
+  assert (p/x['paper']).is_file() and (dest/x['paper']).is_file()
+  continue
+ assert [v['page'] for v in x['pageImages']]==x['pages'] and x['pageImages']
+ assert len(hosted_example['pageImages'])==len(x['pageImages'])
+ for image,hosted_image in zip(x['pageImages'],hosted_example['pageImages']):
+  assert image['image']==f"cross-year-pages/{Path(x['paper']).stem}-{image['page']}.jpg"
+  assert hosted_image['page']==image['page'] and re.fullmatch(r'cross-year-pages/[a-f0-9]{16}-[0-9]+\.jpg',hosted_image['image'])
+  # The portable source path remains the independent byte-level oracle.
+  original_raw=(r/image['image']).read_bytes()
+  assert (p/hosted_image['image']).read_bytes()==original_raw
+  assert (dest/hosted_image['image']).read_bytes()==original_raw
+  original_images.add(hosted_image['image'])
+from PIL import Image
+for name in original_images:
+ with Image.open(p/name) as im:assert im.format=='JPEG' and max(im.size)==2000
+assert 'cross-year-pages/' not in public
+# Practice questions carry only original crops and optional hints; answers live
+# in a separate private section and are not rendered until explicitly opened.
+if 'strategyPracticeReview' in b:
+ assert 'strategyPracticeReview' not in public and 'guided-transfer/v1' not in public
+ guided={key:value for key,value in b['strategyPractice'].items() if value.get('mode')=='guided-transfer/v1'}
+ expected_practice=json.loads(Path('本地资料/真题策略研究/资料分支_试用入口.json').read_text())
+ definition_practice=json.loads(Path('本地资料/真题策略研究/定义样板_试用入口.json').read_text())
+ assert not set(expected_practice)&set(definition_practice)
+ structure_practice=json.loads(Path('本地资料/真题策略研究/中心排序分支_试用入口.json').read_text())
+ assert not set(structure_practice)&(set(expected_practice)|set(definition_practice))
+ assert guided=={**expected_practice,**definition_practice,**structure_practice}
+ expected_review=json.loads(Path('本地资料/真题策略研究/资料分支_试用核验.json').read_text())
+ definition_review=json.loads(Path('本地资料/真题策略研究/定义分支_试用核验.json').read_text())
+ assert not set(expected_review)&set(definition_review)
+ structure_review=json.loads(Path('本地资料/真题策略研究/中心排序分支_试用核验.json').read_text())
+ assert not set(structure_review)&(set(expected_review)|set(definition_review))
+ assert b['strategyPracticeReview']=={**expected_review,**definition_review,**structure_review}
+ assert all('answer' not in q and 'execution' not in q for group in guided.values() for q in group['questions'])
+print(json.dumps({'lazy_original_images':len(original_images),'original_pdf_lessons':sum(x.get('originalMode')=='pdf' for x in examples),'every_review_has_original_pages':True},ensure_ascii=False))
+
+assert sum(f.stat().st_size for f in p.rglob("*") if f.is_file()) < 250*1024*1024, "Expanded static assets leave too little archive headroom"
+assert not (p/'content').exists() and not (dest/'content').exists()
+for runtime_file in ['index.html','app.js','app.css']:
+ assert 'content/' not in (p/runtime_file).read_text()
+hosted_public_text=(p/'public-data.js').read_text()
+seed_public=hydrated_public
+assert seed_public['strategyCards']==json.loads(Path('web/content/xingce-branches.json').read_text())
+assert seed_public['methods']==json.loads(Path('web/content/xingce-methods.json').read_text())
+# Execute the shipped hydration and compare the entire object, including all notes.
+expected_public=json.loads(Path('web/public-data.js').read_text().split('=',1)[1].rstrip(';\n'))
+assert hydrated_public==expected_public, 'Hosted teaching/index hydration changed content'
+
+# Navigation must use actual target categories, including data's cross-category calls.
+methods=json.loads(Path('web/content/xingce-methods.json').read_text())
+cards=json.loads(Path('web/content/xingce-branches.json').read_text())
+card_map={c['id']:c for c in cards}
+for category in methods:
+ for item in category.get('taskMap',[]):
+  for target in item.get('targets',[item]):
+   assert target['branch'] in card_map,target
+   assert card_map[target['branch']]['category']==target.get('category',category['id']),target
+data=next(c for c in methods if c['id']=='data')
+targets=[t for item in data['taskMap'] for t in item.get('targets',[item])]
+assert {t['branch'] for t in targets}>={c['id'] for c in cards if c['category']=='data'}
+assert {(t.get('category'),t['branch']) for t in targets}>={('reading','reading-evidence'),('definition','given-rules')}
+print('task navigation: 15 data methods and 2 cross-category calls; all targets resolve')
+
+# Every linked teaching example must resolve to its exact private original and method.
+by_source={x['source_id']:x for x in b['crossYearExamples']}
+linked=[]
+for card in cards:
+ for role in ['success','failure']:
+  example=card.get('teaching',{}).get(role,{})
+  if not example.get('source_id'):continue
+  source=by_source[example['source_id']]
+  assert card['id'] in {m['id'] for m in source['methods']}
+  assert source['paper'] and (source['pageImages'] or source.get('originalMode')=='pdf' and source['pages'])
+  assert role!='success' or source['status']=='已有策略检验'
+  linked.append(example['source_id'])
+assert len(linked)==len(set(linked)) and len(linked)>=31
+print(f'teaching example provenance: {len(linked)} exact original-question links; disputes excluded from success examples')
+
+# The browser renderer and its worker/data ship from the same pinned package.
+# No CDN fetch is required for reading private original PDFs.
+vendor=Path('web/vendor/pdfjs')
+provenance=json.loads((vendor/'provenance.json').read_text())
+assert provenance['package']=='pdfjs-dist' and provenance['version']=='6.4.299'
+assert (vendor/'LICENSE').is_file()
+for name,digest in provenance['files'].items():
+ for folder in [vendor,p/'vendor/pdfjs',dest/'vendor/pdfjs']:
+  assert hashlib.sha256((folder/name).read_bytes()).hexdigest()==digest,name
+assert len(provenance['files'])==len([f for f in vendor.rglob('*') if f.is_file()])-1
+print('pinned PDF renderer: source, preview and private deployment bytes match; license retained')

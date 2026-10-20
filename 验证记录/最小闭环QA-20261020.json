@@ -1,0 +1,26 @@
+{
+  "qaOnly": true,
+  "lesson": "next-topic-mini/v1",
+  "checked": [
+    "one visible step",
+    "research collapsed by default",
+    "no review before submission",
+    "choice and reasoning required",
+    "hint exposure recorded",
+    "first answer frozen before review",
+    "refresh resumes pending answer",
+    "wrong first answer retained after review",
+    "next action required",
+    "JSON download matches original answer",
+    "all three original practices complete",
+    "mobile and desktop no overflow",
+    "storage failure clearly reported"
+  ],
+  "pageErrors": [],
+  "counts": {
+    "demonstrations": 1,
+    "selfAuthoredPractice": 3
+  },
+  "personalTransfer": "未测",
+  "deployment": "单文件离线入口，未部署私人完整站点"
+}

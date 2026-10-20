@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="440" viewBox="0 0 1280 440" role="img" aria-labelledby="title desc">
+<title id="title">civilserviceexam · 公考解题研习室</title><desc id="desc">把解题策略变成可以模仿的动作。题型识别、最简动作、真题检验、换题独立做。</desc>
+<rect width="1280" height="440" rx="24" fill="#102b23"/>
+<circle cx="1190" cy="50" r="200" fill="#193d30"/>
+<circle cx="1225" cy="60" r="125" fill="#245540"/>
+<g font-family="-apple-system,BlinkMacSystemFont,PingFang SC,Microsoft YaHei,sans-serif">
+<text x="64" y="70" font-size="18" fill="#aad2b9" letter-spacing="4">CIVILSERVICEEXAM / 学习实验</text>
+<text x="64" y="142" font-size="48" font-weight="700" fill="#ffffff">公考解题研习室</text>
+<text x="64" y="196" font-size="26" fill="#d9e9df">把解题策略，变成自己能用的几个动作。</text>
+<path d="M64 241H1216" stroke="#3b6250"/>
+<g fill="#d9e9df" font-size="22">
+<text x="64" y="298">01 认出题型</text><text x="382" y="298">02 选择动作</text><text x="700" y="298">03 真题检验</text><text x="1012" y="298">04 换题试用</text>
+</g>
+<g stroke="#70b78f" fill="none" stroke-width="2"><path d="M251 290h72m-10-9 10 9-10 9"/><path d="M569 290h72m-10-9 10 9-10 9"/><path d="M887 290h72m-10-9 10 9-10 9"/></g>
+<text x="64" y="382" font-size="19" fill="#aad2b9">原创方法公开 · 完整原题私人阅读 · 个人迁移效果待测</text>
+</g></svg>
